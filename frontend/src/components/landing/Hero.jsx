@@ -43,7 +43,7 @@ export default function Hero() {
           whileHover={{ scale: 1.02 }}
           onClick={handleSimulateOutageToggle}
         >
-          <span className={`inline-block w-2.5 h-2.5 rounded-full ${isOutageSimulated ? "bg-amber-500 animate-ping" : "bg-emerald-400"}`}>
+          <span className={`inline-block w-2.5 h-2.5 rounded-full ${isOutageSimulated ? "bg-amber-500 animate-ping" : "bg-blue-400"}`}>
             ●
           </span>
           <span>
@@ -64,11 +64,11 @@ export default function Hero() {
               className={`my-3 p-3 rounded-lg text-xs font-mono border ${
                 isOutageSimulated
                   ? "bg-amber-950/40 text-amber-200 border-amber-500/40"
-                  : "bg-emerald-950/40 text-emerald-200 border-emerald-500/40"
+                  : "bg-blue-950/40 text-blue-200 border-blue-500/40"
               } flex items-center justify-between gap-2 max-w-xl`}
             >
               <div className="flex items-center gap-2">
-                {isOutageSimulated ? <AlertTriangle size={15} className="text-amber-400 animate-pulse" /> : <ShieldCheck size={15} className="text-emerald-400" />}
+                {isOutageSimulated ? <AlertTriangle size={15} className="text-amber-400 animate-pulse" /> : <ShieldCheck size={15} className="text-blue-400" />}
                 <span>{telemetryEvent}</span>
               </div>
               <button
@@ -89,7 +89,8 @@ export default function Hero() {
         >
           When a satellite goes dark,
           <br />
-          <span className="fade">the refund doesn't wait for a human.</span>
+          <span className="fade">the refund doesn't wait for a </span>
+          <span className="accent">human.</span>
         </motion.h1>
 
         {/* Sub-headline */}

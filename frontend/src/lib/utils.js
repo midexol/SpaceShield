@@ -7,8 +7,8 @@ export const cardData = [
     subtitle: "Immutable Telemetry & Satellite Status Layer",
     description:
       "Records satellite uptime, last-contact timestamps, confirmation metrics, and active coverage areas — serving as the single source of telemetry truth that downstream protocol layers monitor.",
-    color: "rgba(47, 107, 79, 0.85)",
-    glow: "#2f6b4f",
+    color: "rgba(79, 134, 247, 0.85)",
+    glow: "#4f86f7",
     iconName: "Radio",
     code: `event SatelliteStatusChanged(
   string indexed satelliteId,
@@ -27,8 +27,8 @@ export const cardData = [
     subtitle: "Dual-Source Cross-Check & Outage Detection",
     description:
       "Polls Spacecoin RPC and public NORAD CelesTrak tracking data concurrently. Only triggers proof building when both telemetry sources confirm an anomaly and clear the confirmation floor.",
-    color: "rgba(181, 80, 46, 0.85)",
-    glow: "#b5502e",
+    color: "rgba(226, 114, 74, 0.85)",
+    glow: "#e2724a",
     iconName: "ShieldAlert",
     code: `async function checkSatellite(satId) {
   const rpcStatus = await queryRpc(satId);
@@ -47,8 +47,8 @@ export const cardData = [
     subtitle: "Native 0x0FD2 Precompile Proof Verification",
     description:
       "Invokes Creditcoin's native Block Prover precompile at address 0x0FD2 to cryptographically verify state and continuity proofs in a single atomic transaction without cross-chain bridges.",
-    color: "rgba(154, 107, 31, 0.85)",
-    glow: "#9a6b1f",
+    color: "rgba(240, 171, 61, 0.85)",
+    glow: "#f0ab3d",
     iconName: "Cpu",
     code: `function verifyAndRegister(bytes calldata proof) external {
   (bool success, bytes memory res) = BLOCK_PROVER.staticcall(proof);
@@ -65,8 +65,8 @@ export const cardData = [
     subtitle: "Live Escrow Checks & Pull Compensation",
     description:
       "Holds operator SLA bond deposits and verifies subscriber eligibility directly against SpacecoinEscrow at claim time, executing instant pro-rata payout transfers without snapshot trust assumptions.",
-    color: "rgba(47, 107, 79, 0.85)",
-    glow: "#2f6b4f",
+    color: "rgba(79, 134, 247, 0.85)",
+    glow: "#4f86f7",
     iconName: "Coins",
     code: `function claim(uint256 outageId) external {
   uint256 activeRatio = SpacecoinEscrow.getCoverageRatio(msg.sender);
@@ -83,8 +83,8 @@ export const cardData = [
     subtitle: "Proof Construction & M-of-N Attestation",
     description:
       "Listens for AI Agent signals, fabricates proof payloads via Proof Builder, manages retry queues, and coordinates M-of-N multi-oracle consensus before submitting final attestations.",
-    color: "rgba(181, 80, 46, 0.85)",
-    glow: "#b5502e",
+    color: "rgba(226, 114, 74, 0.85)",
+    glow: "#e2724a",
     iconName: "Workflow",
     code: `worker.on("trigger", async (event) => {
   const proof = await proofBuilder.generate(event);

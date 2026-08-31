@@ -39,17 +39,19 @@
   --stone: #090b0e;
   --stone-deep: #050608;
   --ink: #edf1f0;
-  --ink-soft: #8b9c96;
+  --ink-soft: #8d95a3;
   --line: rgba(237, 241, 240, 0.12);
-  --green: #3fe08a;
-  --green-dim: rgba(63, 224, 138, 0.14);
+  /* Named --green for historical reasons (the token every shared .btn/.badge/
+     .tag rule already reads) — its value in this scope is blue, not green. */
+  --green: #4f86f7;
+  --green-dim: rgba(79, 134, 247, 0.14);
   --rust: #e2724a;
   --rust-dim: rgba(226, 114, 74, 0.16);
   --paper: #12161c;
   --amber: #f0ab3d;
   --amber-dim: rgba(240, 171, 61, 0.16);
   --shadow-soft: 0 20px 44px -22px rgba(0, 0, 0, 0.7);
-  --shadow-pop: 0 16px 36px -10px rgba(63, 224, 138, 0.38);
+  --shadow-pop: 0 16px 32px -14px rgba(0, 0, 0, 0.7);
   background: var(--stone);
   color: var(--ink);
   min-height: 100vh;
@@ -59,6 +61,11 @@
 }
 .landing-dark nav.site-nav.scrolled {
   box-shadow: 0 8px 28px -18px rgba(0, 0, 0, 0.6);
+}
+/* No ambient glow in the dark theme — a plain dot, not a pulsing ring. */
+.landing-dark .brand-mark {
+  animation: none;
+  box-shadow: none;
 }
 
 * {
@@ -303,15 +310,22 @@ h2 em {
   margin-bottom: 22px;
 }
 .hero h1 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: clamp(38px, 6vw, 64px);
-  line-height: 1.05;
-  letter-spacing: -0.015em;
-  max-width: 820px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(40px, 7vw, 82px);
+  line-height: 1.02;
+  letter-spacing: -0.025em;
+  max-width: 880px;
 }
 .hero h1 .fade {
   color: var(--ink-soft);
+}
+.hero h1 .accent {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--green);
+  letter-spacing: -0.01em;
 }
 .hero-sub {
   font-size: 18px;
@@ -510,11 +524,11 @@ h2 em {
   border-left-color: var(--green);
 }
 .stat-lg-num {
-  font-family: var(--serif);
-  font-weight: 600;
+  font-family: var(--sans);
+  font-weight: 700;
   font-size: clamp(32px, 3.6vw, 46px);
   line-height: 1;
-  letter-spacing: -0.01em;
+  letter-spacing: -0.02em;
   color: var(--ink);
   font-variant-numeric: tabular-nums;
 }
@@ -965,13 +979,37 @@ h2 em {
   line-height: 1.6;
 }
 .faq-item.open .faq-a {
-  max-height: 260px;
+  max-height: 420px;
 }
 
 /* ---------- Footer ---------- */
 footer.site-footer {
   border-top: 1px solid var(--line);
-  padding: 64px 0 40px;
+  padding: 88px 0 40px;
+}
+.foot-cta {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 24px;
+  padding-bottom: 64px;
+  margin-bottom: 56px;
+  border-bottom: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.foot-cta h2 {
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: clamp(28px, 4vw, 44px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+  max-width: 640px;
+}
+.foot-cta-accent {
+  font-family: var(--serif);
+  font-weight: 500;
+  font-style: italic;
+  color: var(--green);
 }
 .foot-grid {
   display: grid;
@@ -984,9 +1022,10 @@ footer.site-footer {
   }
 }
 .foot-brand {
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 14px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 16px;
+  letter-spacing: -0.01em;
   margin-bottom: 12px;
 }
 .foot-desc {
@@ -1027,38 +1066,11 @@ footer.site-footer {
   gap: 10px;
 }
 
-/* ---------- Landing dark theme — ambient glow accents ----------
-   Small additions on top of the token override above: things that need an
-   actual glow (drop-shadow / radial-gradient), not just a recolor. */
-.landing-dark .orbit-wrap {
-  filter: drop-shadow(0 0 22px rgba(63, 224, 138, 0.22));
-}
-.landing-dark .orbit-sat circle {
-  filter: drop-shadow(0 0 6px rgba(63, 224, 138, 0.7));
-}
-.landing-dark .orbit-sat.outage circle {
-  filter: drop-shadow(0 0 6px rgba(226, 114, 74, 0.75));
-}
-.landing-dark .hero {
-  position: relative;
-}
-.landing-dark .hero::before {
-  content: "";
-  position: absolute;
-  top: -20%;
-  right: -10%;
-  width: 720px;
-  height: 720px;
-  background: radial-gradient(circle, rgba(63, 224, 138, 0.14) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-}
+/* ---------- Landing dark theme — flat, no glow ----------
+   Deliberately no drop-shadow/radial-gradient glow anywhere in this theme —
+   just the recolored tokens above plus plain state changes (color, border). */
 .landing-dark .stat-lg:hover .stat-lg-num {
   color: var(--green);
-}
-.landing-dark .btn.green:hover,
-.landing-dark .btn.small.green:hover {
-  box-shadow: var(--shadow-pop);
 }
 
 /* =========================================================================

@@ -8,6 +8,15 @@ export default function Footer({ home = false }) {
   return (
     <footer className="site-footer">
       <div className="wrap">
+        <div className="foot-cta">
+          <h2 className="reveal">
+            Ready when a satellite is <span className="foot-cta-accent">not</span>.
+          </h2>
+          <Link className="btn green" to="/app">
+            Launch app →
+          </Link>
+        </div>
+
         <div className="foot-grid">
           <div>
             <Link to="/" className="foot-brand">
