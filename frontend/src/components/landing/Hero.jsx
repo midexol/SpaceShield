@@ -2,7 +2,6 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import OrbitSat from "../ui/OrbitSat";
-import Starfield from "../ui/Starfield";
 import { AlertTriangle, ShieldCheck, Zap } from "lucide-react";
 
 export default function Hero() {
@@ -30,7 +29,6 @@ export default function Hero() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
-      <Starfield />
       <OrbitSat />
 
       <div className="wrap hero-inner relative z-10">

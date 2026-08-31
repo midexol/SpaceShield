@@ -36,7 +36,6 @@ export default function Footer({ home = false }) {
           <div className="foot-col">
             <h5>Build</h5>
             <a href={`${p}#cases`}>Case studies</a>
-            <a href={`${p}#scope`}>MVP scope</a>
             <a href={`${p}#faq`}>Questions</a>
           </div>
           <div className="foot-col">

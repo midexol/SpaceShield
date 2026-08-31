@@ -1,5 +1,6 @@
 import { useScrollReveal } from "../lib/animations";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
+import Starfield from "../components/ui/Starfield";
 import SiteNav from "../components/landing/SiteNav";
 import Hero from "../components/landing/Hero";
 import StatsBand from "../components/landing/StatsBand";
@@ -8,7 +9,6 @@ import Simulator from "../components/landing/Simulator";
 import PromiseBand from "../components/landing/Promise";
 import Architecture from "../components/landing/Architecture";
 import CaseStudies from "../components/landing/CaseStudies";
-import Scope from "../components/landing/Scope";
 import Faq from "../components/landing/Faq";
 import Footer from "../components/landing/Footer";
 import StickyCTA from "../components/landing/StickyCTA";
@@ -22,6 +22,7 @@ export default function Landing() {
 
   return (
     <div className="landing-dark">
+      <Starfield />
       <SiteNav home />
       <Hero />
       <StatsBand />
@@ -30,7 +31,6 @@ export default function Landing() {
       <PromiseBand />
       <Architecture />
       <CaseStudies />
-      <Scope />
       <Faq />
       <Footer home />
       <StickyCTA />

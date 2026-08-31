@@ -1,10 +1,12 @@
-// Ambient starfield for the dark landing hero. rAF-driven canvas, cheap
+// Ambient starfield for the dark landing pages. Fixed to the viewport (not
+// any one section) so the same field of stars sits behind the whole scroll —
+// mounted once at the page root, not per-section. rAF-driven canvas, cheap
 // (a few hundred points, no libraries). Freezes on prefers-reduced-motion —
 // still paints once so the field isn't just blank.
 import { useEffect, useRef } from "react";
 import { prefersReducedMotion } from "../../lib/animations";
 
-export default function Starfield({ count = 160 }) {
+export default function Starfield({ count = 220 }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
@@ -17,9 +19,8 @@ export default function Starfield({ count = 160 }) {
     let width = 0;
     let height = 0;
     const resize = () => {
-      const rect = canvas.parentElement.getBoundingClientRect();
-      width = rect.width;
-      height = rect.height;
+      width = window.innerWidth;
+      height = window.innerHeight;
       canvas.width = width * dpr;
       canvas.height = height * dpr;
     };

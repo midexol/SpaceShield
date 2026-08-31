@@ -1,4 +1,5 @@
 import { Link } from "react-router-dom";
+import Starfield from "../components/ui/Starfield";
 import SiteNav from "../components/landing/SiteNav";
 import Footer from "../components/landing/Footer";
 import Icon from "../components/ui/Icon";
@@ -16,6 +17,7 @@ export default function Privacy() {
 
   return (
     <div className="landing-dark">
+      <Starfield />
       <SiteNav />
       <main className="legal-page">
         <div className="wrap legal">

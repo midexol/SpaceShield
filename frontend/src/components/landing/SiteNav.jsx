@@ -6,7 +6,6 @@ const SECTIONS = [
   ["#simulate", "Simulate"],
   ["#architecture", "Architecture"],
   ["#cases", "Case studies"],
-  ["#scope", "Scope"],
   ["#faq", "FAQ"],
 ];
 

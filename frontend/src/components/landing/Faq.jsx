@@ -36,7 +36,7 @@ export default function Faq() {
   return (
     <section id="faq">
       <div className="wrap">
-        <div className="eyebrow reveal">06 · Questions</div>
+        <div className="eyebrow reveal">05 · Questions</div>
         <h2 className="reveal">How it actually works, and where it's still a prototype.</h2>
 
         <div style={{ marginTop: 36 }} className="reveal">
