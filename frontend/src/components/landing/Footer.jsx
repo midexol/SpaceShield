@@ -20,7 +20,7 @@ export default function Footer({ home = false }) {
         <div className="foot-grid">
           <div>
             <Link to="/" className="foot-brand">
-              <span className="brand-mark" style={{ display: "inline-block" }} /> SPACESHIELD
+              <span className="brand-mark" style={{ display: "inline-block" }} /> SpaceShield
             </Link>
             <p className="foot-desc">
               Autonomous SLA enforcement for Spacecoin's satellite network. Detected by an AI agent,

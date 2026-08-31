@@ -28,6 +28,9 @@
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --serif: "Newsreader", Georgia, serif;
   --sans: "Inter", system-ui, sans-serif;
+  /* The "SpaceShield" wordmark only — a dramatic italic, distinct from every
+     other typeface on the site, used nowhere else so it stays a signature. */
+  --brand-font: "Instrument Serif", Georgia, serif;
   --shadow-soft: 0 16px 30px -20px rgba(21, 23, 28, 0.16);
   --shadow-pop: 0 10px 24px -10px rgba(21, 23, 28, 0.22);
 }
@@ -172,14 +175,15 @@ nav.site-nav .wrap {
   display: flex;
   align-items: center;
   gap: 9px;
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 14px;
-  letter-spacing: 0.02em;
+  font-family: var(--brand-font);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 22px;
+  letter-spacing: 0;
 }
 .brand-mark {
-  width: 9px;
-  height: 9px;
+  width: 10px;
+  height: 10px;
   border-radius: 50%;
   background: var(--green);
   box-shadow: 0 0 0 3px var(--green-dim);
@@ -966,10 +970,10 @@ footer.site-footer {
   }
 }
 .foot-brand {
-  font-family: var(--sans);
-  font-weight: 700;
-  font-size: 16px;
-  letter-spacing: -0.01em;
+  font-family: var(--brand-font);
+  font-style: italic;
+  font-weight: 400;
+  font-size: 24px;
   margin-bottom: 12px;
 }
 .foot-desc {

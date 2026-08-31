@@ -27,7 +27,7 @@ export default function SiteNav({ home = false }) {
     <nav className={`site-nav ${scrolled ? "scrolled" : ""}`}>
       <div className="wrap">
         <Link className="brand" to="/">
-          <span className="brand-mark" /> SPACESHIELD
+          <span className="brand-mark" /> SpaceShield
         </Link>
         <div className="navlinks">
           {home ? (
