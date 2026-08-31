@@ -1,0 +1,30 @@
+{
+  "name": "spaceshield-frontend",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "SpaceShield — marketing landing + wallet-connected dApp for the live contracts",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@rainbow-me/rainbowkit": "^2.1.7",
+    "@tailwindcss/vite": "^4.3.3",
+    "@tanstack/react-query": "^5.56.2",
+    "gsap": "^3.15.0",
+    "lucide-react": "^1.38.0",
+    "motion": "^13.1.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.26.2",
+    "tailwindcss": "^4.3.3",
+    "viem": "^2.21.19",
+    "wagmi": "^2.12.17"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-react": "^4.3.1",
+    "vite": "^5.4.8"
+  }
+}

@@ -1,0 +1,4 @@
+{
+  "SAT-014": { "is_online": false, "source": "mock NORAD fixture" },
+  "SAT-002": { "is_online": true, "source": "mock NORAD fixture" }
+}

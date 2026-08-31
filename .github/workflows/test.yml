@@ -1,0 +1,30 @@
+name: SpaceShield tests
+
+on:
+  push:
+  pull_request:
+
+jobs:
+  contracts:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - run: npm install
+      - name: Compile contracts
+        run: node scripts/build.js
+      - name: Run Hardhat test suite
+        run: npx hardhat test --no-compile
+
+  agent:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install web3 requests
+      - name: Run public tracker unit tests
+        run: python3 -m unittest agent/test_public_tracker.py -v

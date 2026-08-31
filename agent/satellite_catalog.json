@@ -1,0 +1,4 @@
+{
+  "_comment": "Illustrative mapping only. SAT-014 is not a real Spacecoin satellite ID; it's mapped here to a real, stable, well-known NORAD catalog number (the ISS) purely so CelestrakTracker has a real object to query in environments with open network access. Production would populate this from Spacecoin's own satellite registry.",
+  "SAT-014": 25544
+}

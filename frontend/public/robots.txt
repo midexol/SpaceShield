@@ -1,0 +1,11 @@
+# SpaceShield — autonomous SLA enforcement for satellite internet
+# Marketing pages are crawlable; the wallet-connected dApp under /app is an
+# application surface with no indexable content, so it's excluded.
+
+User-agent: *
+Allow: /$
+Allow: /privacy
+Disallow: /app
+
+# Local/demo build — no public domain or sitemap yet.
+# Sitemap: https://<your-domain>/sitemap.xml
