@@ -15,7 +15,7 @@ export default function Privacy() {
   );
 
   return (
-    <>
+    <div className="landing-dark">
       <SiteNav />
       <main className="legal-page">
         <div className="wrap legal">
@@ -144,6 +144,6 @@ export default function Privacy() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

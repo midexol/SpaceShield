@@ -20,7 +20,7 @@ export default function Landing() {
   );
 
   return (
-    <>
+    <div className="landing-dark">
       <SiteNav home />
       <Hero />
       <Problem />
@@ -32,6 +32,6 @@ export default function Landing() {
       <Faq />
       <Footer home />
       <StickyCTA />
-    </>
+    </div>
   );
 }

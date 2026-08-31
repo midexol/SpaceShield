@@ -197,7 +197,7 @@ const Card = ({ card, index, totalCards }) => {
               </div>
               <div
                 style={{
-                  fontFamily: "var(--font-mono)",
+                  fontFamily: "var(--mono)",
                   fontSize: "1.5rem",
                   fontWeight: 700,
                   color: "var(--line)",
@@ -212,7 +212,7 @@ const Card = ({ card, index, totalCards }) => {
               style={{
                 fontSize: "1.5rem",
                 fontWeight: 700,
-                color: "var(--stone)",
+                color: "var(--ink)",
                 marginBottom: "0.4rem",
                 letterSpacing: "-0.01em",
               }}
@@ -222,7 +222,7 @@ const Card = ({ card, index, totalCards }) => {
             <p
               style={{
                 fontSize: "0.92rem",
-                color: "var(--stone-deep)",
+                color: "var(--ink-soft)",
                 lineHeight: 1.6,
                 marginBottom: "1.25rem",
                 maxWidth: "720px",
@@ -241,7 +241,7 @@ const Card = ({ card, index, totalCards }) => {
                 borderRadius: "12px",
                 padding: "0.9rem 1.15rem",
                 border: "1px solid var(--line)",
-                fontFamily: "var(--font-mono)",
+                fontFamily: "var(--mono)",
                 fontSize: "0.78rem",
                 color: "#a3e635",
                 overflowX: "auto",

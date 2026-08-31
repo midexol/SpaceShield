@@ -13,7 +13,7 @@ export default function NotFound() {
   );
 
   return (
-    <>
+    <div className="landing-dark">
       <SiteNav />
       <main className="legal-page">
         <div className="wrap notfound">
@@ -58,6 +58,6 @@ export default function NotFound() {
         </div>
       </main>
       <Footer />
-    </>
+    </div>
   );
 }

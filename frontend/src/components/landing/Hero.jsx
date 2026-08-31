@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import OrbitSat from "../ui/OrbitSat";
+import Starfield from "../ui/Starfield";
 import { scrambleText } from "../../lib/animations";
 import { Radio, AlertTriangle, ShieldCheck, Activity, Zap, RefreshCw } from "lucide-react";
 
@@ -54,6 +55,7 @@ export default function Hero() {
       animate={{ opacity: 1 }}
       transition={{ duration: 0.8 }}
     >
+      <Starfield />
       <OrbitSat />
 
       <div className="wrap hero-inner relative z-10">
@@ -185,7 +187,7 @@ export default function Hero() {
               key={s.lab}
               whileHover={{
                 y: -6,
-                boxShadow: "0 12px 30px rgba(0,0,0,0.35)",
+                boxShadow: "0 14px 34px -6px rgba(63,224,138,0.45)",
                 borderColor: "var(--green)",
               }}
               transition={{ type: "spring", stiffness: 300, damping: 20 }}
