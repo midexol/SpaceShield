@@ -14,11 +14,11 @@ const queryClient = new QueryClient({
 });
 
 // RainbowKit themed toward SpaceShield's palette. The modal is RainbowKit's own,
-// but the accent + radius pull it toward the editorial/terminal look.
+// but the accent + radius pull it toward the app's own blue-on-white look.
 const spaceshieldTheme = lightTheme({
-  accentColor: "#2F6B4F",
-  accentColorForeground: "#F4F1E9",
-  borderRadius: "small",
+  accentColor: "#3F6FE0",
+  accentColorForeground: "#FFFFFF",
+  borderRadius: "medium",
   fontStack: "system",
   overlayBlur: "small",
 });

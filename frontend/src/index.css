@@ -9,23 +9,27 @@
    ========================================================================= */
 
 :root {
-  --stone: #eae6dc;
-  --stone-deep: #dfdacd;
-  --ink: #17181a;
-  --ink-soft: #55564f;
-  --line: #c9c3b3;
-  --green: #2f6b4f;
-  --green-dim: #dde6dd;
-  --rust: #b5502e;
-  --rust-dim: #f0ddd3;
-  --paper: #f4f1e9;
+  /* Cool near-white, not the old warm stone/paper — halflife.namite.xyz's
+     palette direction, tuned to SpaceShield's own accent. Blue replaces the
+     old forest green as the brand accent across the whole app, not just the
+     dark landing pages. */
+  --stone: #f5f6f8;
+  --stone-deep: #e7e9ed;
+  --ink: #15171c;
+  --ink-soft: #5c5f68;
+  --line: #dde0e5;
+  --green: #3f6fe0;
+  --green-dim: #e8effe;
+  --rust: #c0472a;
+  --rust-dim: #fbe9e4;
+  --paper: #ffffff;
   --amber: #9a6b1f;
-  --amber-dim: #efe4cd;
+  --amber-dim: #f5ecd9;
   --mono: "IBM Plex Mono", ui-monospace, monospace;
   --serif: "Newsreader", Georgia, serif;
   --sans: "Inter", system-ui, sans-serif;
-  --shadow-soft: 0 16px 30px -20px rgba(23, 24, 26, 0.35);
-  --shadow-pop: 0 10px 20px -12px rgba(23, 24, 26, 0.5);
+  --shadow-soft: 0 16px 30px -20px rgba(21, 23, 28, 0.16);
+  --shadow-pop: 0 10px 24px -10px rgba(21, 23, 28, 0.22);
 }
 
 /* ---------- Landing dark theme ----------
@@ -149,7 +153,7 @@ nav.site-nav {
   position: sticky;
   top: 0;
   z-index: 50;
-  background: rgba(234, 230, 220, 0.88);
+  background: rgba(245, 246, 248, 0.88);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
   transition: box-shadow 0.3s ease, border-color 0.3s ease;
@@ -346,7 +350,7 @@ h2 em {
   font-size: 13px;
   letter-spacing: 0.02em;
   padding: 13px 22px;
-  border-radius: 3px;
+  border-radius: 8px;
   border: 1px solid var(--ink);
   background: var(--ink);
   color: var(--paper);
@@ -361,7 +365,7 @@ h2 em {
   text-decoration: none;
 }
 .btn:hover {
-  background: #2b2c2e;
+  opacity: 0.88;
   transform: translateY(-2px);
   box-shadow: var(--shadow-pop);
 }
@@ -381,9 +385,6 @@ h2 em {
   background: var(--green);
   border-color: var(--green);
   color: var(--paper);
-}
-.btn.green:hover {
-  background: #275a43;
 }
 .btn.small {
   padding: 9px 14px;
@@ -1052,9 +1053,10 @@ footer.site-footer {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 11px 12px;
-  border-radius: 4px;
+  padding: 11px 14px;
+  border-radius: 10px;
   font-size: 14px;
+  font-weight: 500;
   color: var(--ink-soft);
   transition: background 0.18s ease, color 0.18s ease;
   cursor: pointer;
@@ -1097,7 +1099,7 @@ footer.site-footer {
     right: 0;
     bottom: 0;
     z-index: 60;
-    background: rgba(244, 241, 233, 0.96);
+    background: rgba(245, 246, 248, 0.96);
     backdrop-filter: blur(8px);
     border-top: 1px solid var(--line);
     padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
@@ -1134,7 +1136,7 @@ footer.site-footer {
   position: sticky;
   top: 0;
   z-index: 40;
-  background: rgba(234, 230, 220, 0.9);
+  background: rgba(245, 246, 248, 0.9);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--line);
   display: flex;
@@ -1144,9 +1146,10 @@ footer.site-footer {
   padding: 14px 28px;
 }
 .app-topbar .page-title {
-  font-family: var(--serif);
-  font-size: 20px;
-  font-weight: 500;
+  font-family: var(--sans);
+  font-size: 19px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
 }
 .app-topbar .topbar-right {
   display: flex;
@@ -1176,10 +1179,11 @@ footer.site-footer {
   margin-bottom: 10px;
 }
 .page-head h1 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: clamp(24px, 3.4vw, 32px);
-  line-height: 1.15;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: clamp(26px, 3.6vw, 38px);
+  letter-spacing: -0.02em;
+  line-height: 1.08;
 }
 .page-head p {
   color: var(--ink-soft);
@@ -1209,7 +1213,8 @@ footer.site-footer {
   border: 1px solid var(--line);
   background: var(--paper);
   padding: 22px 22px;
-  border-radius: 4px;
+  border-radius: 14px;
+  box-shadow: var(--shadow-soft);
 }
 .card.pad-lg {
   padding: 28px;
@@ -1229,9 +1234,10 @@ footer.site-footer {
   color: var(--ink-soft);
 }
 .card h3.card-heading {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 20px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
 }
 
 /* Key/value + metric rows */
@@ -1257,10 +1263,12 @@ footer.site-footer {
   word-break: break-word;
 }
 .metric .big {
-  font-family: var(--mono);
-  font-weight: 600;
-  font-size: 30px;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 34px;
+  letter-spacing: -0.02em;
   color: var(--ink);
+  font-variant-numeric: tabular-nums;
 }
 .metric .cap {
   font-size: 13px;
@@ -1319,7 +1327,7 @@ footer.site-footer {
   border-left: 3px solid var(--ink-soft);
   background: var(--paper);
   padding: 14px 16px;
-  border-radius: 3px;
+  border-radius: 10px;
   font-size: 13px;
   color: var(--ink-soft);
   line-height: 1.55;
@@ -1361,7 +1369,7 @@ footer.site-footer {
   font-size: 14px;
   padding: 11px 13px;
   border: 1px solid var(--line);
-  border-radius: 3px;
+  border-radius: 8px;
   background: var(--stone);
   color: var(--ink);
   width: 100%;
@@ -1396,9 +1404,10 @@ footer.site-footer {
   margin-bottom: 12px;
 }
 .empty-state h3 {
-  font-family: var(--serif);
-  font-weight: 500;
-  font-size: 20px;
+  font-family: var(--sans);
+  font-weight: 700;
+  font-size: 19px;
+  letter-spacing: -0.01em;
   color: var(--ink);
   margin-bottom: 8px;
 }
@@ -1570,11 +1579,12 @@ footer.site-footer {
 .modal {
   background: var(--stone);
   border: 1px solid var(--line);
+  border-radius: 16px;
   max-width: 860px;
   width: 100%;
   max-height: 90vh;
   overflow-y: auto;
-  box-shadow: 0 40px 80px -30px rgba(23, 24, 26, 0.6);
+  box-shadow: 0 40px 80px -30px rgba(23, 24, 26, 0.35);
   animation: modalIn 0.25s cubic-bezier(0.2, 0.7, 0.2, 1);
 }
 @keyframes modalIn {
@@ -1745,7 +1755,7 @@ code.inline {
   border: 1px solid var(--line);
   border-radius: 10px;
   padding: 14px 16px;
-  background: rgba(255, 255, 255, 0.35);
+  background: var(--stone);
 }
 .claim-amt {
   font-family: var(--mono);
