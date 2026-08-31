@@ -1,38 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import { useState } from "react";
 import { Link } from "react-router-dom";
 import { motion, AnimatePresence } from "motion/react";
 import OrbitSat from "../ui/OrbitSat";
 import Starfield from "../ui/Starfield";
-import { scrambleText } from "../../lib/animations";
-import { Radio, AlertTriangle, ShieldCheck, Activity, Zap, RefreshCw } from "lucide-react";
-
-const INITIAL_STATS = [
-  { final: "2.6B", lab: "Underserved users targeted", qual: "Spacecoin's stated addressable population" },
-  { final: "~15s", lab: "Detection to settlement", qual: "One precompile call, one block" },
-  { final: "0x0FD2", lab: "Block Prover precompile", qual: "Native to Creditcoin, not a bridge" },
-  { final: "0", lab: "Manual claims filed", qual: "Settlement requires no user action" },
-];
+import { AlertTriangle, ShieldCheck, Zap } from "lucide-react";
 
 export default function Hero() {
-  const numRefs = useRef([]);
   const [isOutageSimulated, setIsOutageSimulated] = useState(false);
   const [telemetryEvent, setTelemetryEvent] = useState(null);
-
-  useEffect(() => {
-    const cleanups = INITIAL_STATS.map((s, i) => {
-      const el = numRefs.current[i];
-      if (!el) return () => {};
-      let stop = () => {};
-      const to = setTimeout(() => {
-        stop = scrambleText(el, s.final, { duration: 620 });
-      }, 520 + i * 110);
-      return () => {
-        clearTimeout(to);
-        stop();
-      };
-    });
-    return () => cleanups.forEach((c) => c());
-  }, []);
 
   const handleSimulateOutageToggle = () => {
     if (!isOutageSimulated) {
@@ -151,54 +126,6 @@ export default function Hero() {
               See the architecture
             </a>
           </motion.div>
-        </motion.div>
-
-        {/* Live Protocol Badges */}
-        <motion.div
-          className="hero-badges"
-          initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ duration: 0.6, delay: 0.5 }}
-        >
-          <motion.span className="badge" whileHover={{ y: -2 }}>
-            <span className="dot" />
-            CTC-0 &amp; CTC-1 live constellations
-          </motion.span>
-          <motion.span className="badge" whileHover={{ y: -2 }}>
-            <span className="dot" />
-            No manual claims
-          </motion.span>
-          <motion.span className="badge" whileHover={{ y: -2 }}>
-            <span className="dot" />
-            Precompile-verified proofs
-          </motion.span>
-        </motion.div>
-
-        {/* Interactive Stat Cards Grid with 3D Tilt Hover Physics */}
-        <motion.div
-          className="stat-grid reveal-stagger in"
-          initial={{ opacity: 0, y: 25 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.7, delay: 0.6 }}
-        >
-          {INITIAL_STATS.map((s, i) => (
-            <motion.div
-              className="stat transition-all duration-300 relative group overflow-hidden"
-              key={s.lab}
-              whileHover={{
-                y: -6,
-                boxShadow: "0 14px 34px -6px rgba(63,224,138,0.45)",
-                borderColor: "var(--green)",
-              }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-            >
-              <div className="num" ref={(el) => (numRefs.current[i] = el)}>
-                ···
-              </div>
-              <div className="lab">{s.lab}</div>
-              <div className="qual">{s.qual}</div>
-            </motion.div>
-          ))}
         </motion.div>
       </div>
     </motion.header>

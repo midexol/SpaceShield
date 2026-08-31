@@ -473,41 +473,59 @@ h2 em {
   letter-spacing: 0.05em;
 }
 
-/* ---------- Stat grid ---------- */
-.stat-grid {
-  display: grid;
-  grid-template-columns: repeat(4, 1fr);
-  gap: 1px;
-  background: var(--line);
-  border: 1px solid var(--line);
-  margin-top: 56px;
-}
-@media (max-width: 800px) {
-  .stat-grid {
-    grid-template-columns: repeat(2, 1fr);
-  }
-}
-.stat {
-  background: var(--stone);
-  padding: 26px 22px;
-  transition: background 0.25s ease;
-}
-.stat:hover {
+/* ---------- Stats band ----------
+   The credibility stats used to live inside .hero, competing with the
+   headline/CTAs for the same screen. Now its own beat right after Hero,
+   revealed on scroll like the rest of the page. Three type roles carry three
+   levels of the fact: serif number (the headline's own face), sans label
+   (the plain-English claim), mono qualifier (the technical footnote). */
+.stats-band {
+  padding: 88px 0;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
   background: var(--paper);
 }
-.stat .num {
-  font-family: var(--mono);
+.stats-band-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 20px 44px;
+}
+@media (max-width: 800px) {
+  .stats-band-grid {
+    grid-template-columns: repeat(2, 1fr);
+    row-gap: 36px;
+  }
+}
+@media (max-width: 480px) {
+  .stats-band-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.stat-lg {
+  padding-left: 22px;
+  border-left: 2px solid var(--line);
+  transition: border-color 0.3s ease;
+}
+.stat-lg:hover {
+  border-left-color: var(--green);
+}
+.stat-lg-num {
+  font-family: var(--serif);
   font-weight: 600;
-  font-size: 28px;
+  font-size: clamp(32px, 3.6vw, 46px);
+  line-height: 1;
+  letter-spacing: -0.01em;
   color: var(--ink);
-  min-height: 34px;
+  font-variant-numeric: tabular-nums;
 }
-.stat .lab {
-  font-size: 13px;
-  color: var(--ink-soft);
-  margin-top: 6px;
+.stat-lg-lab {
+  font-family: var(--sans);
+  font-weight: 500;
+  font-size: 14.5px;
+  color: var(--ink);
+  margin-top: 12px;
 }
-.stat .qual {
+.stat-lg-qual {
   font-family: var(--mono);
   font-size: 11px;
   color: var(--ink-soft);
@@ -1035,8 +1053,8 @@ footer.site-footer {
   pointer-events: none;
   z-index: 0;
 }
-.landing-dark .stat:hover {
-  box-shadow: inset 0 1px 0 rgba(63, 224, 138, 0.25);
+.landing-dark .stat-lg:hover .stat-lg-num {
+  color: var(--green);
 }
 .landing-dark .btn.green:hover,
 .landing-dark .btn.small.green:hover {

@@ -2,6 +2,7 @@ import { useScrollReveal } from "../lib/animations";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
 import SiteNav from "../components/landing/SiteNav";
 import Hero from "../components/landing/Hero";
+import StatsBand from "../components/landing/StatsBand";
 import Problem from "../components/landing/Problem";
 import Simulator from "../components/landing/Simulator";
 import PromiseBand from "../components/landing/Promise";
@@ -23,6 +24,7 @@ export default function Landing() {
     <div className="landing-dark">
       <SiteNav home />
       <Hero />
+      <StatsBand />
       <Problem />
       <Simulator />
       <PromiseBand />
