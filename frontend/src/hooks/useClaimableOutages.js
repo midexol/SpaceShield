@@ -22,7 +22,8 @@ export function useClaimableOutages() {
   const query = useQuery({
     queryKey: ["claimable", chainId, address, net?.addresses?.settlement],
     enabled,
-    refetchInterval: 10000,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       // Compensation window (constant) + live coverage state, read once.
       const [windowRaw, isActive, subStartRaw] = await Promise.all([

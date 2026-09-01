@@ -168,9 +168,20 @@ export default function Dashboard() {
           <p className="lede">Your coverage, claims, and payouts — all in one place.</p>
         </div>
         <div className="callout warn mono">
-          <strong>{net?.name || "This network"} isn't deployed.</strong> Start a local node
-          (<code>npx hardhat node</code>) and run <code>node scripts/deploy.js</code>, then reload
-          and reconnect.
+          <strong>{net?.name || "This network"} isn't deployed.</strong>{" "}
+          {net?.isLocal === false ? (
+            <>
+              Run <code>npx hardhat run scripts/deploy-testnet.js --network creditcoinTestnet</code>{" "}
+              (needs a funded <code>CC3_TESTNET_PRIVATE_KEY</code> — see README's "What you need to
+              do"), then wire the printed addresses into <code>VITE_CC_TESTNET_*</code> and reload.
+              Or switch back to Hardhat Local in your wallet.
+            </>
+          ) : (
+            <>
+              Start a local node (<code>npx hardhat node</code>) and run{" "}
+              <code>node scripts/deploy.js</code>, then reload and reconnect.
+            </>
+          )}
         </div>
       </div>
     );

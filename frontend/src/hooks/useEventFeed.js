@@ -23,7 +23,8 @@ export function useEventFeed() {
   const query = useQuery({
     queryKey: ["eventFeed", chainId, net?.addresses?.settlement],
     enabled,
-    refetchInterval: 10000,
+    refetchInterval: 15000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       const [statusEv, verifiedEv, registeredEv, claimedEv] = await Promise.all([
         getEvents(publicClient, { address: source.address, abiKey: "source", eventName: "SatelliteStatusChanged" }),

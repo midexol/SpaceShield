@@ -23,7 +23,8 @@ export function useBondHealth() {
   const query = useQuery({
     queryKey: ["bondHealth", chainId, net?.addresses?.settlement],
     enabled,
-    refetchInterval: 12000,
+    refetchInterval: 20000,
+    refetchIntervalInBackground: false,
     queryFn: async () => {
       // 1) Active subscribers per satelliteKey via event replay.
       const [locked, withdrawn] = await Promise.all([

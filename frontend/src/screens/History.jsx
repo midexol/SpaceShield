@@ -145,8 +145,18 @@ export default function History() {
 
       {!deployed ? (
         <div className="callout warn mono">
-          <strong>{net?.name || "This network"} isn't deployed.</strong> Run the local node and{" "}
-          <code>node scripts/deploy.js</code> to populate history.
+          <strong>{net?.name || "This network"} isn't deployed.</strong>{" "}
+          {net?.isLocal === false ? (
+            <>
+              Run <code>scripts/deploy-testnet.js</code> against{" "}
+              <code>--network creditcoinTestnet</code> (needs a funded key — see README), then wire
+              the addresses into <code>VITE_CC_TESTNET_*</code>.
+            </>
+          ) : (
+            <>
+              Run the local node and <code>node scripts/deploy.js</code> to populate history.
+            </>
+          )}
         </div>
       ) : null}
 

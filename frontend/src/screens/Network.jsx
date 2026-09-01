@@ -52,8 +52,21 @@ export default function Network() {
 
       {!deployed ? (
         <div className="callout warn mono">
-          <strong>{net?.name || "This network"} isn't deployed.</strong> Start a local node
-          (<code>npx hardhat node</code>) and run <code>node scripts/deploy.js</code>, then reload.
+          <strong>{net?.name || "This network"} isn't deployed.</strong>{" "}
+          {net?.isLocal === false ? (
+            <>
+              Run <code>npx hardhat run scripts/deploy-testnet.js --network creditcoinTestnet</code>{" "}
+              (needs a funded <code>CC3_TESTNET_PRIVATE_KEY</code> — see README's "What you need to
+              do"), then copy the addresses it prints into <code>frontend/.env.example</code>'s{" "}
+              <code>VITE_CC_TESTNET_*</code> vars and reload. Or switch back to Hardhat Local in your
+              wallet.
+            </>
+          ) : (
+            <>
+              Start a local node (<code>npx hardhat node</code>) and run{" "}
+              <code>node scripts/deploy.js</code>, then reload.
+            </>
+          )}
         </div>
       ) : null}
 

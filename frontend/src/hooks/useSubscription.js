@@ -30,7 +30,7 @@ export function useSubscription() {
           },
         ]
       : [],
-    query: { enabled, refetchInterval: 10000 },
+    query: { enabled, refetchInterval: 15000, refetchIntervalInBackground: false },
   });
 
   const [activeRes, startRes] = query.data || [];

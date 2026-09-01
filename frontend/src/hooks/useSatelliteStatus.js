@@ -1,5 +1,7 @@
 // Live satellite telemetry: MockSpacecoinSource.getStatus(satelliteId).
-// Polls every 8s so the Network page reflects a Trigger Outage in near-real-time.
+// Polls every 15s so the Network page reflects a Trigger Outage in
+// near-real-time without hammering the RPC — pauses entirely while the tab
+// isn't visible/focused (refetchIntervalInBackground: false).
 import { useReadContract } from "wagmi";
 import { getContract } from "../lib/contracts";
 import { useNetwork } from "./useNetwork";
@@ -15,7 +17,7 @@ export function useSatelliteStatus() {
     functionName: "getStatus",
     args: satelliteId ? [satelliteId] : undefined,
     chainId,
-    query: { enabled, refetchInterval: 8000 },
+    query: { enabled, refetchInterval: 15000, refetchIntervalInBackground: false },
   });
 
   const d = query.data;
