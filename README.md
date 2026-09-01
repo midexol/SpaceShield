@@ -167,7 +167,7 @@ faked.
 | Contract logic (bonding, pull-based claims, live coverage-based subscriber verification, pro-rata compensation, M-of-N oracle attestation, treasury-routed penalties, idempotent settlement) | **Real** — the actual code that would ship |
 | Subscriber coverage (`CoverageVault.sol`) | **Real, SpaceShield's own contract** — not a model of Spacecoin's payment system (an earlier version incorrectly claimed to be; see `architecture.md` §4 for what the real Spacecoin contract turned out to be and why it can't serve this purpose) |
 | Attestcoin Block Prover interface | **Real ABI**, confirmed from the `usc-sdk` package's shipped artifacts (interface `INativeQueryVerifier`) — an earlier version guessed a flat-bytes signature that would have reverted against the real precompile on every call |
-| Attestcoin Block Prover precompile itself | **Mocked locally** (`MockBlockProver.sol`, installed at the real `0x0FD2` address via `hardhat_setCode`, now speaking the real ABI byte-for-byte) — whether the real precompile is live with this interface on Creditcoin's CC3-testnet is unverified; the mock's toy logic is not cryptographically real either way |
+| Attestcoin Block Prover precompile itself | **Mocked locally** (`MockBlockProver.sol`, installed at the real `0x0FD2` address via `hardhat_setCode`, now speaking the real ABI byte-for-byte) — **tested for real against CC3-testnet** (2026-09-01): `verifyOutage()` reverted with `"precompile call failed"`, meaning nothing at `0x0FD2` on that network currently answers to the confirmed real interface. See `architecture.md` §4a |
 | Spacecoin's satellite-status/telemetry reporting | **Mocked** — same-chain-vs-cross-chain is a genuine open question, see `architecture.md` §3 |
 | Proof *shape* (Merkle/continuity struct format) | **Real** — matches the confirmed real precompile interface |
 | Proof *content* | **Fabricated** — there's no real Spacecoin transaction yet to build a genuine proof from; swapping `oracle-worker/proofBuilder.js`'s body for a real `usc-sdk` `ProofBuilder` call is the remaining step, once telemetry (above) is real |
@@ -177,7 +177,7 @@ faked.
 | Oracle decentralization | **Real M-of-N attestation** |
 | Frontend (wallet-connected dApp + public transparency pages) | **Real** — RainbowKit/wagmi, live contract reads/writes, a browser-driven trigger for the full pipeline on the local chain |
 | CI + bond-health monitoring | **Real**, runnable (`.github/workflows/test.yml`, `scripts/monitor_bonds.js`) |
-| Creditcoin CC3-testnet deployment | **Infrastructure is real** (`hardhat.config.js`'s `creditcoinTestnet` network, `scripts/deploy-testnet.js`) — not yet actually run; needs a funded key only you can provide, see "What you need to do" |
+| Creditcoin CC3-testnet deployment | **Done, for real** — deployed 2026-09-01, see "Live testnet deployment" below |
 
 ## Quickstart
 
@@ -234,6 +234,32 @@ thing pointed at a different network — see its header comment for why (no
 test of whether the Attestcoin precompile is actually live at `0x0FD2` on
 that network, which this repo cannot confirm from a read-only scan).
 
+### Live testnet deployment
+
+Deployed for real on Creditcoin CC3-testnet, 2026-09-01 (see
+`deployment.testnet.json`; addresses also below for anyone reading this
+without that file). Operator, oracle, and treasury all point at the same
+deployer address — a single-key solo deployment, not a multi-party one; see
+`scripts/deploy-testnet.js`'s header for why that's the sane default for a
+first real deployment.
+
+| Contract | Address |
+|---|---|
+| MockSpacecoinSource | [`0xa221F85CD183427F755Cf23bc7e799ec44B4D165`](https://creditcoin-testnet.blockscout.com/address/0xa221F85CD183427F755Cf23bc7e799ec44B4D165) |
+| CoverageVault | [`0xc4F3a0311B9f87B48b406bDA890E7D18357D5A56`](https://creditcoin-testnet.blockscout.com/address/0xc4F3a0311B9f87B48b406bDA890E7D18357D5A56) |
+| SettlementContract | [`0x66C3BFC91CE2Ffdfd835c81D64FF78F06A5eD7b5`](https://creditcoin-testnet.blockscout.com/address/0x66C3BFC91CE2Ffdfd835c81D64FF78F06A5eD7b5) |
+| SpaceShieldASC | [`0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656`](https://creditcoin-testnet.blockscout.com/address/0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656) |
+
+**The one real thing this deployment already tested: the Attestcoin
+precompile question.** A real `verifyOutage()` call against the real
+`SpaceShieldASC` above reverted with `"precompile call failed"` — nothing
+at `0x0FD2` on this testnet currently answers to the confirmed real
+`INativeQueryVerifier` interface. That's not a bug in this repo to fix;
+it's the actual, current answer, and it's now a concrete question ("we
+called `verify(...)` at `0x0FD2` on CC3-testnet and it reverted — is the
+precompile live there?") to put to Creditcoin/Gluwa directly, not a
+hypothetical one. See `architecture.md` §4a.
+
 ## Structure
 
 ```
@@ -258,9 +284,10 @@ for how this list connects to the design decisions above:
   real; the proof *content* is still fabricated because there's no real
   Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
 - Whether Creditcoin CC3-testnet's `0x0FD2` actually carries the real
-  Block Prover precompile with the confirmed interface — infrastructure to
-  test this for real now exists (`scripts/deploy-testnet.js`) but hasn't
-  been run.
+  Block Prover precompile with the confirmed interface — **now tested**,
+  and as of 2026-09-01 the answer is no (see "Live testnet deployment"
+  above). Needs a response from Creditcoin/Gluwa, not more testing from
+  this side.
 - Oracle Worker persistence/retry queue beyond contract-level idempotency.
 - Multi-satellite support is architecturally ready (everything's keyed by
   `satelliteId`) but never load-tested with more than one.
@@ -281,13 +308,14 @@ real testnet infrastructure added, docs corrected to match. What's left
 needs either your credentials, your judgment call, or a conversation with
 Spacecoin's team — none of it is something more code from here can resolve:
 
-1. **Fund a Creditcoin CC3-testnet wallet and provide its private key** to
-   actually run `scripts/deploy-testnet.js`. Generate a wallet (e.g.
-   `npx hardhat run` a throwaway script, or any wallet tool), get testnet
-   tCTC from Creditcoin's faucet for that address, then put the private key
-   in `.env` as `CC3_TESTNET_PRIVATE_KEY`. This is the one step that
-   actually tests whether the real Attestcoin precompile responds the way
-   `architecture.md` §4a assumes.
+1. ~~Fund a Creditcoin CC3-testnet wallet and provide its private key~~ —
+   **done, 2026-09-01.** Real deployment live, addresses in "Live testnet
+   deployment" above. It also answered the question this step existed to
+   answer: the real Attestcoin precompile does not currently respond at
+   `0x0FD2` on this testnet. **New action:** raise this with
+   Creditcoin/Gluwa directly — "we called `verifyOutage()` against a real
+   deployed ASC on CC3-testnet and it reverted at the precompile call" is
+   now a concrete, reproducible report, not a hypothetical.
 2. **Decide CoverageVault's relationship to Spacecoin's real
    `TokenPaymentEscrow`** — stay fully independent (current state, and
    arguably the more honest default), or additionally require some signal

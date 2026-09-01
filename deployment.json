@@ -1,9 +1,9 @@
 {
   "rpcUrl": "http://127.0.0.1:8545",
-  "sourceAddress": "0xa513E6E4b8f2a923D98304ec87F64353C4D5C853",
-  "escrowAddress": "0x2279B7A0a67DB372996a5FaB50D91eAA73d2eBe6",
-  "ascAddress": "0xB7f8BC63BbcaD18155201308C8f3540b07f84F5e",
-  "settlementAddress": "0x610178dA211FEF7D417bC0e6FeD39F05609AD788",
+  "sourceAddress": "0x9A676e781A523b5d0C0e43731313A708CB607508",
+  "escrowAddress": "0x0B306BF915C4d645ff596e518fAf3F9669b97016",
+  "ascAddress": "0x68B1D87F95878fE05B998F19b66F4baba5De1aed",
+  "settlementAddress": "0x9A9f2CCfdE556A7E9Ff0848998Aa4a0CFD8863AE",
   "treasuryAddress": "0x90F79bf6EB2c4f870365E785982E1f101E93b906",
   "oraclePrivateKey": "0x5de4111afa1a4b94908f83103eb1f1706367c2e68ca870fc3fb9a804cdab365a",
   "satelliteId": "SAT-014",

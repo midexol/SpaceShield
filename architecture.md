@@ -244,18 +244,24 @@ source — now imports the real generated ABIs from `artifacts-manual/`
 instead, which makes this exact class of silent drift impossible going
 forward), and `test/spaceshield.test.js`'s malformed-proof fixture.
 
-**What's still unverified:** whether Creditcoin's CC3-testnet actually has
-this precompile live at `0x0FD2` with this exact interface.
-`eth_getCode` on that address returns empty on testnet — which is
-*consistent* with a genuine precompile (precompiles are native VM logic,
-not deployed bytecode, so `eth_getCode` is expected to be empty for real
-ones too, the same way Ethereum's own `ecrecover` at `0x01` shows no
-code) but doesn't prove it's there. The only way to actually confirm this
-is a real `verifyOutage()` call against CC3-testnet with a real oracle
-key — which needs the funded deployer key from §3a / README's "What you
-need to do." If the precompile isn't there or doesn't match, the call
-reverts cleanly (`abi.decode` on empty returndata reverts) rather than
-silently succeeding, so this is a safe thing to actually go test.
+**Update — actually tested, and it's not there (yet):** with a real deployed
+`SpaceShieldASC` and a real funded oracle key, `verifyOutage()` was called
+against CC3-testnet for real. It reverted with `"precompile call failed"` —
+the low-level call to `0x0FD2` itself did not succeed. `eth_getCode` on that
+address had already returned empty, which is *consistent* with a genuine
+precompile (precompiles are native VM logic, not deployed bytecode, the
+same way Ethereum's own `ecrecover` at `0x01` shows no code) but doesn't by
+itself prove one's there. This second, functional test is stronger evidence
+than the bytecode check alone, and it points the other way: as of this
+deployment (SAT-014 / ASC at `0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656`,
+tested 2026-09-01), nothing at `0x0FD2` on CC3-testnet responds to
+`INativeQueryVerifier.verify`. That could mean the precompile isn't rolled
+out to this testnet yet, isn't live at this address on this network, or
+(less likely, since the interface came from the SDK's own shipped ABI) the
+real interface differs further from what's implemented here. Not a reason
+to guess further — this is exactly the kind of question to put to
+Creditcoin/Gluwa directly now that there's a concrete, reproducible
+failure to describe, rather than a hypothetical one.
 
 ## 5. Compensation model: pro-rata, and why
 

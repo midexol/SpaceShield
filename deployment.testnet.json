@@ -1,0 +1,16 @@
+{
+  "network": "creditcoinTestnet",
+  "chainId": 102031,
+  "rpcUrl": "https://rpc.cc3-testnet.creditcoin.network",
+  "sourceAddress": "0xa221F85CD183427F755Cf23bc7e799ec44B4D165",
+  "escrowAddress": "0xc4F3a0311B9f87B48b406bDA890E7D18357D5A56",
+  "ascAddress": "0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656",
+  "settlementAddress": "0x66C3BFC91CE2Ffdfd835c81D64FF78F06A5eD7b5",
+  "treasuryAddress": "0x72b1E8a33084B626e1Cc4A685A1A0060a89ad126",
+  "operatorAddress": "0x72b1E8a33084B626e1Cc4A685A1A0060a89ad126",
+  "oracleAddress": "0x72b1E8a33084B626e1Cc4A685A1A0060a89ad126",
+  "satelliteId": "SAT-014",
+  "subscriberAddress": "0x72b1E8a33084B626e1Cc4A685A1A0060a89ad126",
+  "deployerAddress": "0x72b1E8a33084B626e1Cc4A685A1A0060a89ad126",
+  "deployedAt": "2026-09-01T22:41:31.334Z"
+}
