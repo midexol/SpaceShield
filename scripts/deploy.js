@@ -44,7 +44,7 @@ async function main() {
   }
 
   const source = await deploy("MockSpacecoinSource", owner);
-  const escrow = await deploy("SpacecoinEscrow", owner);
+  const escrow = await deploy("CoverageVault", owner);
 
   // Place MockBlockProver bytecode at the real precompile address.
   const proverArt = loadArtifact("MockBlockProver");
@@ -85,15 +85,15 @@ async function main() {
   ).wait();
   console.log("Registered oracle", oracle1.address, "(attestation threshold defaults to 1)");
 
-  // userA pays into Spacecoin's own (mocked) escrow contract to become a
-  // real, on-chain, live-verifiable subscriber of SAT-014 - no snapshot,
+  // userA locks coverage stake in SpaceShield's own CoverageVault to become
+  // a real, on-chain, live-verifiable subscriber of SAT-014 - no snapshot,
   // no publisher, no allowlist. This IS the subscription.
   await (
     await escrow.connect(userA).lockCoverage("SAT-014", operator.address, {
       value: ethers.parseEther("0.1"),
     })
   ).wait();
-  console.log("userA locked coverage payment in SpacecoinEscrow for SAT-014 (this makes them a real subscriber)");
+  console.log("userA locked coverage stake in CoverageVault for SAT-014 (this makes them a real subscriber)");
 
   await (
     await settlement.connect(operator).lockBond(ethers.parseEther("0.01"), {

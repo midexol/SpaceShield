@@ -1,5 +1,5 @@
 // The connected wallet's coverage status for the active satellite, read live from
-// SpacecoinEscrow (isActiveSubscriberByKey + subscriptionStartByKey) — the same
+// CoverageVault (isActiveSubscriberByKey + subscriptionStartByKey) — the same
 // two reads SettlementContract.claim() trusts at claim time.
 import { useAccount, useReadContracts } from "wagmi";
 import { getContract } from "../lib/contracts";

@@ -12,6 +12,7 @@ import {
   http,
   keccak256,
   toHex,
+  zeroHash,
   encodeAbiParameters,
   parseAbiParameters,
   encodePacked,
@@ -24,7 +25,6 @@ import { LOCAL_CHAIN_ID } from "../config/networks";
 
 export const CONFIRMATIONS_TARGET = 6;
 const SPACECOIN_CHAIN_KEY = 1n; // ignored by MockBlockProver; a real chain id in prod
-const CONTINUITY_PROOF = "0x01";
 const OUTAGE_LOCATION = "LEO 540km · plane B";
 
 // The four stages the modal renders (mirrors the landing simulator's shape).
@@ -50,8 +50,15 @@ export function encodeOutageTx({ satelliteId, isOnline, timestamp, location, con
   ]);
 }
 
+// Struct shapes match the real INativeQueryVerifier.MerkleProof /
+// ContinuityProof from the usc-sdk package's shipped ABI — see
+// SpaceShieldASC.sol's docstring. MockBlockProver only checks `root`, so
+// `siblings`/`roots` are left empty here rather than fabricated further.
 export function buildMockProof(encodedTx) {
-  return { merkleProof: keccak256(encodedTx), continuityProof: CONTINUITY_PROOF };
+  return {
+    merkleProof: { root: keccak256(encodedTx), siblings: [] },
+    continuityProof: { lowerEndpointDigest: zeroHash, roots: [keccak256(encodedTx)] },
+  };
 }
 
 export function computeOutageId({ satelliteId, blockHeight, encodedTx }) {

@@ -6,20 +6,17 @@
  * (cron + email, a Slack webhook, a Prometheus textfile exporter, etc.)
  * without this repo needing to pick one for you.
  *
- * SUBSCRIBER COUNTING - why it reads escrow events: eligibility itself is
+ * SUBSCRIBER COUNTING - why it reads vault events: eligibility itself is
  * checked live and point-wise at claim time (SettlementContract.claim() ->
- * SpacecoinEscrow.isActiveSubscriberByKey), and that trust path deliberately
- * has NO enumerable subscriber list - that's the whole point of the escrow
- * refactor (see SpacecoinEscrow.sol / architecture.md §4). This ops-side
+ * CoverageVault.isActiveSubscriberByKey), and that trust path deliberately
+ * has NO enumerable subscriber list - that's the whole point of the vault
+ * design (see CoverageVault.sol / architecture.md §4). This ops-side
  * script, though, needs an estimate of total *exposure* (how many
  * subscribers could claim against a given bond), so it reconstructs the
- * current active-subscriber set per satellite from SpacecoinEscrow's own
+ * current active-subscriber set per satellite from CoverageVault's own
  * CoverageLocked / CoverageWithdrawn event log. That's canonical on-chain
  * data, not an off-chain snapshot, and it is NOT part of the claim trust
- * path - it only feeds this monitoring estimate. A production Spacecoin
- * escrow may expose subscriber data differently (a count getter, a subgraph,
- * an indexer); swapping the reconstruction below for that is the only change
- * needed when integrating the real contract.
+ * path - it only feeds this monitoring estimate.
  *
  * Run: node scripts/monitor_bonds.js
  * Requires deployment.json (written by scripts/deploy.js) in the repo root.
@@ -71,7 +68,7 @@ async function main() {
   const provider = new ethers.JsonRpcProvider(dep.rpcUrl);
 
   const settlement = new ethers.Contract(dep.settlementAddress, loadArtifact("SettlementContract").abi, provider);
-  const escrow = new ethers.Contract(dep.escrowAddress, loadArtifact("SpacecoinEscrow").abi, provider);
+  const escrow = new ethers.Contract(dep.escrowAddress, loadArtifact("CoverageVault").abi, provider);
   const asc = new ethers.Contract(dep.ascAddress, loadArtifact("SpaceShieldASC").abi, provider);
 
   const activeBySatKey = await activeSubscribersBySatKey(escrow);

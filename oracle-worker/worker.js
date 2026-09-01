@@ -19,12 +19,14 @@ const express = require("express");
 const { ethers } = require("ethers");
 const { encodeOutageTx, buildMockProof } = require("./proofBuilder");
 
-const SOURCE_ABI = [
-  "function getStatus(string) view returns (bool isOnline, uint256 lastContact, uint256 confirmations, string location)",
-];
-const ASC_ABI = [
-  "function verifyOutage(string satelliteId, uint64 chainKey, uint64 blockHeight, bytes encodedTx, bytes merkleProof, bytes continuityProof) returns (bool)",
-];
+// Real, generated ABIs — not hand-typed fragments. A hand-typed ASC_ABI
+// fragment here previously hardcoded `bytes merkleProof, bytes
+// continuityProof`, silently drifted from the real struct-shaped signature
+// once SpaceShieldASC.sol was corrected, and nothing would have caught it
+// until a real transaction reverted. Importing the built artifact directly
+// makes that drift impossible.
+const SOURCE_ABI = require("../artifacts-manual/MockSpacecoinSource.json").abi;
+const ASC_ABI = require("../artifacts-manual/SpaceShieldASC.json").abi;
 
 async function handleOutageTrigger({ satelliteId, chainKey, blockHeight, provider, sourceAddress, ascAddress, signer }) {
   const source = new ethers.Contract(sourceAddress, SOURCE_ABI, provider);

@@ -100,9 +100,14 @@ export default function PipelineModal({ open, onClose, network, chainId, onCompl
                     {st.key === "detect" && s.confirmations != null ? (
                       <div className="val">confirmations: {s.confirmations}</div>
                     ) : null}
-                    {s.merkleProof ? <div className="val">merkle: {shortHash(s.merkleProof)}</div> : null}
+                    {s.merkleProof ? (
+                      <div className="val">merkle root: {shortHash(s.merkleProof.root)}</div>
+                    ) : null}
                     {s.continuityProof ? (
-                      <div className="val">continuity: {s.continuityProof}</div>
+                      <div className="val">
+                        continuity: {shortHash(s.continuityProof.lowerEndpointDigest)} ·{" "}
+                        {s.continuityProof.roots.length} root{s.continuityProof.roots.length === 1 ? "" : "s"}
+                      </div>
                     ) : null}
                     {s.outageId ? <div className="val">outageId: {shortHash(s.outageId)}</div> : null}
                     {s.txHash ? <div className="val">tx: {shortHash(s.txHash)}</div> : null}

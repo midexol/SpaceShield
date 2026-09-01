@@ -59,7 +59,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const Source = await getFactory("MockSpacecoinSource", owner);
     source = await Source.deploy();
 
-    const Escrow = await getFactory("SpacecoinEscrow", owner);
+    const Escrow = await getFactory("CoverageVault", owner);
     escrow = await Escrow.deploy();
 
     const Prover = await getFactory("MockBlockProver", owner);
@@ -279,12 +279,18 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
   it("rejects a malformed proof", async function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
-    const forgedMerkleProof = ethers.keccak256(ethers.toUtf8Bytes("not the real tx"));
+    // Correctly-shaped per INativeQueryVerifier.MerkleProof, but the root
+    // doesn't commit to encodedTx — MockBlockProver's check should reject it.
+    const forgedMerkleProof = {
+      root: ethers.keccak256(ethers.toUtf8Bytes("not the real tx")),
+      siblings: [],
+    };
+    const continuityProof = { lowerEndpointDigest: ethers.ZeroHash, roots: [ethers.ZeroHash] };
 
     await expect(
       asc
         .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, forgedMerkleProof, "0x01")
+        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, forgedMerkleProof, continuityProof)
     ).to.be.revertedWith("proof rejected");
   });
 

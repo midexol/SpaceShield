@@ -1,5 +1,5 @@
 {
-  "contractName": "ISpacecoinEscrow",
+  "contractName": "ICoverageVault",
   "abi": [
     {
       "inputs": [

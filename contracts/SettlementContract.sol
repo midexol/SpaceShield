@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.24;
 
-interface ISpacecoinEscrow {
+interface ICoverageVault {
     function isActiveSubscriberByKey(bytes32 satelliteKey, address user) external view returns (bool);
     function subscriptionStartByKey(bytes32 satelliteKey, address user) external view returns (uint256);
 }
@@ -11,11 +11,19 @@ interface ISpacecoinEscrow {
 ///         subscribers pull their own compensation after an outage is
 ///         proven.
 ///
-///         Subscriber eligibility was previously checked against a
-///         Merkle root an off-chain snapshot service had to publish (see
-///         git history / earlier README revisions). That's been replaced:
-///         eligibility is now checked live against Spacecoin's own
-///         on-chain escrow contract (see SpacecoinEscrow.sol).
+///         Subscriber eligibility was originally checked against a Merkle
+///         root an off-chain snapshot service had to publish (see git
+///         history). That publisher-trust problem was real, but the fix
+///         that replaced it was, for a while, wrong in a different way: it
+///         checked eligibility against a contract that claimed to model
+///         Spacecoin's real on-chain payment mechanism. It didn't — see
+///         CoverageVault.sol's docstring for what the real contract (found
+///         via Creditcoin's own explorer, once real network access was
+///         available) actually does and why it can't answer "is this
+///         address covered." Eligibility is now checked live against
+///         CoverageVault, SpaceShield's own coverage contract — no
+///         publisher, no snapshot staleness, and no longer pretending to be
+///         someone else's contract.
 ///
 ///         COMPENSATION MODEL - pro-rata, not flat: someone who starts
 ///         paying into escrow mid-outage-window is a real edge case, not a
@@ -42,7 +50,7 @@ contract SettlementContract {
     uint256 public constant COMPENSATION_WINDOW = 1 days;
 
     address public immutable asc;
-    ISpacecoinEscrow public immutable escrow;
+    ICoverageVault public immutable escrow;
     address public treasury;
     address public owner;
 
@@ -82,7 +90,7 @@ contract SettlementContract {
         require(_escrow != address(0), "escrow = zero address");
         require(_treasury != address(0), "treasury = zero address");
         asc = _asc;
-        escrow = ISpacecoinEscrow(_escrow);
+        escrow = ICoverageVault(_escrow);
         treasury = _treasury;
         owner = msg.sender;
     }
@@ -118,7 +126,7 @@ contract SettlementContract {
     }
 
     /// @notice Any address can call this for itself. Eligibility is checked
-    ///         live against SpacecoinEscrow, and the payout is pro-rated by
+    ///         live against CoverageVault, and the payout is pro-rated by
     ///         how much of COMPENSATION_WINDOW the caller was actually
     ///         subscribed for (see contract-level docstring for why).
     ///

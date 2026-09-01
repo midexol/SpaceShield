@@ -16,8 +16,19 @@ export default function SidebarNav() {
 
   return (
     <aside className="sidebar">
-      <Link className="brand" to="/">
-        <span className="brand-mark" /> SpaceShield
+      <Link className="brand flex items-center gap-2.5 cursor-pointer group" to="/" title="SpaceShield Home">
+        <img
+          src="/logo.png"
+          alt="SpaceShield Logo"
+          style={{
+            height: "30px",
+            width: "auto",
+            objectFit: "contain",
+            filter: "drop-shadow(0 1px 3px rgba(0, 0, 0, 0.15))",
+          }}
+          className="transition-transform duration-200 group-hover:scale-105"
+        />
+        <span className="font-semibold tracking-tight" style={{ color: "var(--ink)" }}>SpaceShield</span>
       </Link>
       <nav className="side-links">
         {LINKS.map((l) => (

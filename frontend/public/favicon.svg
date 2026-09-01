@@ -1,5 +1,21 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="SpaceShield">
-  <rect width="32" height="32" rx="7" fill="#17181a" />
-  <circle cx="16" cy="16" r="9" fill="none" stroke="#2f6b4f" stroke-opacity="0.45" stroke-width="1.5" />
-  <circle cx="16" cy="16" r="4.5" fill="#2f6b4f" />
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Dark Box Favicon Container matching user image -->
+  <rect width="100" height="100" rx="18" fill="#090b0e" />
+  
+  <g fill="#eae6dc" transform="translate(4, 2) scale(0.92)">
+    <!-- Shield Outer Boundary -->
+    <path d="M 50 20 C 65 20 78 24 78 45 C 78 68 50 82 50 82 C 50 82 22 68 22 45 C 22 24 35 20 50 20 Z" 
+          fill="none" stroke="#eae6dc" stroke-width="7" stroke-linejoin="round" />
+    
+    <!-- Concentric Target Rings Inside Shield -->
+    <circle cx="50" cy="46" r="18" fill="none" stroke="#eae6dc" stroke-width="5" />
+    <circle cx="50" cy="46" r="10" fill="none" stroke="#eae6dc" stroke-width="4" />
+    <circle cx="50" cy="46" r="4.5" fill="#eae6dc" />
+
+    <!-- Diagonal Satellite Antenna / Beam Bar -->
+    <path d="M 16 70 L 74 24" stroke="#eae6dc" stroke-width="7" stroke-linecap="round" fill="none" />
+    
+    <!-- Top-Right Antenna Satellite Knob -->
+    <circle cx="78" cy="21" r="5" fill="#eae6dc" />
+  </g>
 </svg>

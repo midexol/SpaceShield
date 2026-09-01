@@ -51,7 +51,7 @@ sequenceDiagram
     participant ASC as SpaceShieldASC
     participant BP as Block Prover<br/>(0x0FD2 precompile)
     participant ST as SettlementContract
-    participant ES as SpacecoinEscrow
+    participant CV as CoverageVault
     participant U as Subscriber
 
     SC->>AI: satellite status: OFFLINE
@@ -61,14 +61,14 @@ sequenceDiagram
     AI->>OW: trigger (HTTP)
     OW->>OW: build proof (Merkle + continuity)
     OW->>ASC: verifyOutage(proof)
-    ASC->>BP: staticcall verify
+    ASC->>BP: verify(chainKey, height, tx, merkleProof, continuityProof)
     BP-->>ASC: proof valid
     ASC->>ASC: M-of-N oracle attestation met
     ASC->>ST: registerSettlement(outageId)
     Note over ST: claimable — no one paid yet
     U->>ST: claim(outageId)
-    ST->>ES: live coverage check
-    ES-->>ST: subscriber since T, still active
+    ST->>CV: live coverage check
+    CV-->>ST: subscriber since T, still active
     ST-->>U: pro-rata payout from operator bond
 ```
 
@@ -89,8 +89,8 @@ graph TB
         WORKER["Oracle Worker<br/><i>HTTP trigger → proof → submit</i>"]
     end
 
-    subgraph CREDITCOIN["🔗 Creditcoin — payments, verification & settlement"]
-        ESC["SpacecoinEscrow<br/><i>real payment mechanism, modeled</i>"]
+    subgraph CREDITCOIN["🔗 Creditcoin — verification, settlement & coverage"]
+        CV["CoverageVault<br/><i>SpaceShield's own coverage contract</i>"]
         ASC["SpaceShieldASC<br/><i>M-of-N attestation</i>"]
         PROVER{{"Block Prover<br/>0x0FD2 precompile"}}
         SETTLE["SettlementContract<br/><i>bonds + pull-based claims</i>"]
@@ -104,10 +104,10 @@ graph TB
     TRACK -->|confirms| AGENT
     AGENT -->|trigger| WORKER
     WORKER -->|verify proof| ASC
-    ASC -->|staticcall| PROVER
+    ASC -->|verify struct proof| PROVER
     ASC -->|registerSettlement| SETTLE
-    SETTLE -.->|live eligibility read| ESC
-    USER -->|lockCoverage| ESC
+    SETTLE -.->|live eligibility read| CV
+    USER -->|lockCoverage| CV
     OPERATOR -->|lock bond| SETTLE
     USER -->|claim| SETTLE
     SETTLE -->|pro-rata payout| USER
@@ -117,17 +117,23 @@ graph TB
     style OFFCHAIN fill:#15181c,stroke:#8d95a3,color:#e8ecf1
 ```
 
-*SpacecoinEscrow lives under Creditcoin, not Spacecoin — confirmed in
-`architecture.md` §4: Spacecoin's real payment mechanism is deployed on
-Creditcoin itself, same chain as SpaceShield's own contracts, which is
-exactly why `claim()` can read it live instead of trusting a snapshot.*
+*CoverageVault is SpaceShield's own contract, not a model of Spacecoin's.*
+An earlier version of this repo modeled a Spacecoin payment contract from a
+single line of documentation and called it `SpacecoinEscrow`. With real
+network access, the actual deployed contract was found and read (verified
+source, Creditcoin's own explorer) — it's a prepaid, usage-metered
+data-payment escrow with no concept of "coverage" or "subscription" at all,
+so it can't answer the question SpaceShield needs answered. Rather than
+force that fit, SpaceShield's coverage is now honestly its own product. See
+[`architecture.md`](architecture.md), §4, for the full evidence and
+reasoning, including the addresses of the real contract that was found.
 
 **Why nobody has to trust anybody:** the AI Agent never touches money — it
 can only ever cause a proof attempt, and a fabricated proof is rejected by
 the precompile. A single oracle can't finalize alone once
 `attestationThreshold > 1`. Anyone claiming compensation is checked live
-against `SpacecoinEscrow`, which SpaceShield doesn't control — you actually
-have to have paid Spacecoin. Full trust-boundary table in
+against `CoverageVault` — SpaceShield's own on-chain coverage record, not a
+caller-supplied list. Full trust-boundary table in
 [`architecture.md`](architecture.md), §6.
 
 ## Proven three ways
@@ -143,12 +149,12 @@ have to have paid Spacecoin. Full trust-boundary table in
    submitting a real transaction, followed by a subscriber pulling their own
    compensation via a live on-chain eligibility check. The wallet-connected
    frontend can also drive this exact pipeline from a browser button.
-3. **A live (blocked-but-honest) network check** — the public-tracking
-   client makes a real HTTP request to CelesTrak; from a network-restricted
-   sandbox it gets a real `403` back and falls back to a local fixture
-   instead of silently pretending the check passed. `python3 -m unittest
-   agent/test_public_tracker.py -v` — 6/6 passing against CelesTrak's real
-   documented schema.
+3. **A real, live network check** — the public-tracking client makes a real
+   HTTP request to CelesTrak. Run against real satellite data (catalog
+   number 25544 / ISS, which `agent/satellite_catalog.json` maps SAT-014 to
+   for exactly this reason): a real, fresh, plausible result, no fixture
+   fallback needed. `python3 -m unittest agent/test_public_tracker.py -v`
+   — 6/6 passing against CelesTrak's real documented schema.
 
 ## What's real vs. mocked
 
@@ -158,35 +164,43 @@ faked.
 
 | Piece | Status |
 |---|---|
-| Contract logic (bonding, pull-based claims, live escrow-based subscriber verification, pro-rata compensation, M-of-N oracle attestation, treasury-routed penalties, idempotent settlement) | **Real** — the actual code that would ship |
-| Spacecoin's payment/escrow mechanism | **Modeled faithfully** from confirmed official docs — the real deployed contract's address/ABI weren't independently locatable |
+| Contract logic (bonding, pull-based claims, live coverage-based subscriber verification, pro-rata compensation, M-of-N oracle attestation, treasury-routed penalties, idempotent settlement) | **Real** — the actual code that would ship |
+| Subscriber coverage (`CoverageVault.sol`) | **Real, SpaceShield's own contract** — not a model of Spacecoin's payment system (an earlier version incorrectly claimed to be; see `architecture.md` §4 for what the real Spacecoin contract turned out to be and why it can't serve this purpose) |
+| Attestcoin Block Prover interface | **Real ABI**, confirmed from the `usc-sdk` package's shipped artifacts (interface `INativeQueryVerifier`) — an earlier version guessed a flat-bytes signature that would have reverted against the real precompile on every call |
+| Attestcoin Block Prover precompile itself | **Mocked locally** (`MockBlockProver.sol`, installed at the real `0x0FD2` address via `hardhat_setCode`, now speaking the real ABI byte-for-byte) — whether the real precompile is live with this interface on Creditcoin's CC3-testnet is unverified; the mock's toy logic is not cryptographically real either way |
 | Spacecoin's satellite-status/telemetry reporting | **Mocked** — same-chain-vs-cross-chain is a genuine open question, see `architecture.md` §3 |
-| Attestcoin Block Prover precompile (`0x0FD2`) | **Mocked**, installed at the real precompile address via `hardhat_setCode` so the real ASC code never has to change |
-| Proof generation (`@gluwa/usc-sdk`) | **Mocked** — fabricates a proof shaped to satisfy the mock verifier; the entire migration path to production is swapping this one module |
+| Proof *shape* (Merkle/continuity struct format) | **Real** — matches the confirmed real precompile interface |
+| Proof *content* | **Fabricated** — there's no real Spacecoin transaction yet to build a genuine proof from; swapping `oracle-worker/proofBuilder.js`'s body for a real `usc-sdk` `ProofBuilder` call is the remaining step, once telemetry (above) is real |
 | AI Agent detection/cross-check/confirmation-floor logic | **Real**, independently runnable (`agent/monitor.py`) |
-| Public tracking cross-check (CelesTrak) | **Real client** against the actual documented endpoint |
+| Public tracking cross-check (CelesTrak) | **Real**, live-tested against real satellite data, not just reachable in principle |
 | Affected-user / payout verification | **Real, live, same-chain** — no snapshot, no publisher, no caller-supplied address list anywhere in the flow |
 | Oracle decentralization | **Real M-of-N attestation** |
 | Frontend (wallet-connected dApp + public transparency pages) | **Real** — RainbowKit/wagmi, live contract reads/writes, a browser-driven trigger for the full pipeline on the local chain |
 | CI + bond-health monitoring | **Real**, runnable (`.github/workflows/test.yml`, `scripts/monitor_bonds.js`) |
+| Creditcoin CC3-testnet deployment | **Infrastructure is real** (`hardhat.config.js`'s `creditcoinTestnet` network, `scripts/deploy-testnet.js`) — not yet actually run; needs a funded key only you can provide, see "What you need to do" |
 
 ## Quickstart
 
 ```bash
 npm install
-node scripts/build.js                  # compiles contracts (manual solc — see note below)
+node scripts/build.js                  # compiles contracts (manual solc, fast, works everywhere)
 npx hardhat test --no-compile          # 16 passing
 python3 -m unittest agent/test_public_tracker.py -v   # 6 passing
 ```
 
-**Run it live:**
+`npx hardhat compile` also works directly now (`viaIR: true` is set in
+`hardhat.config.js`) if you'd rather use it — `scripts/build.js`'s manual
+`solc` path is just faster and doesn't need `binaries.soliditylang.org`
+reachable, so it's still the default.
+
+**Run it live (local chain):**
 
 ```bash
 # 1. local chain
 npx hardhat node
 
 # 2. deploy + wire everything (contracts, oracle registration, a real
-#    subscriber paying into SpacecoinEscrow) — prints deployment.json
+#    subscriber locking coverage) — prints deployment.json
 node scripts/deploy.js
 
 # 3. the frontend (marketing site at /, wallet-connected app at /app)
@@ -205,20 +219,28 @@ python3 agent/monitor.py --satellite SAT-014 \
 From the app's Network page, "Trigger outage" runs this exact pipeline as
 real transactions against the local chain — no mocked timers.
 
-*Why a manual `solc` build:* the reference sandbox this was built in has
-network egress allowlisted to package registries only, so
-`scripts/build.js` compiles with the `solc` npm package (bundles its own
-wasm) instead of `npx hardhat compile`, which needs
-`binaries.soliditylang.org`. If you have open network access, `npx hardhat
-compile` works normally.
+**Real testnet deployment (Creditcoin CC3-testnet):**
+
+```bash
+cp .env.example .env
+# fill in CC3_TESTNET_PRIVATE_KEY — a wallet funded with testnet tCTC
+# (see "What you need to do" below for how to get one)
+npx hardhat run scripts/deploy-testnet.js --network creditcoinTestnet
+```
+
+This is a genuinely different script from `scripts/deploy.js`, not the same
+thing pointed at a different network — see its header comment for why (no
+`hardhat_setCode` on a real chain, no 8 auto-funded roles, and it's a real
+test of whether the Attestcoin precompile is actually live at `0x0FD2` on
+that network, which this repo cannot confirm from a read-only scan).
 
 ## Structure
 
 ```
-contracts/          Solidity — telemetry source, escrow, ASC, settlement
+contracts/          Solidity — telemetry source, coverage vault, ASC, settlement
 agent/               Python — AI detection agent + real CelesTrak client
 oracle-worker/       Node — HTTP trigger → proof → submit
-scripts/             build / deploy / bond-health monitor
+scripts/             build / deploy (local + real testnet) / bond-health monitor
 test/                16 end-to-end + failure-mode integration tests
 frontend/            React + wagmi/RainbowKit — marketing site + dApp
 architecture.md      System design, trust boundaries, decision log
@@ -232,18 +254,56 @@ for how this list connects to the design decisions above:
 - **Open architectural question:** is satellite telemetry reporting
   same-chain (like payments turned out to be) or genuinely cross-chain?
   Needs real information from Spacecoin's team, not more reasoning.
-- **Real Spacecoin/Creditcoin testnet integration** — needs the actual
-  endpoints and a verified `SpacecoinEscrow` deployment.
-- **Real Attestcoin proof pipeline** (`@gluwa/usc-sdk`) against Creditcoin's
-  hosted Proof Builder service.
+- **Real Attestcoin proof content** — the proof *shape* is now confirmed
+  real; the proof *content* is still fabricated because there's no real
+  Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
+- Whether Creditcoin CC3-testnet's `0x0FD2` actually carries the real
+  Block Prover precompile with the confirmed interface — infrastructure to
+  test this for real now exists (`scripts/deploy-testnet.js`) but hasn't
+  been run.
 - Oracle Worker persistence/retry queue beyond contract-level idempotency.
 - Multi-satellite support is architecturally ready (everything's keyed by
   `satelliteId`) but never load-tested with more than one.
 - No chain-reorg invalidation path.
 - `COMPENSATION_WINDOW` is an illustrative placeholder (`1 days`) — a real
   deployment sets this from Spacecoin's actual SLA terms.
+- Whether `CoverageVault` should additionally read Spacecoin's real
+  `TokenPaymentEscrow` as a secondary signal is an open product question,
+  not an engineering one — see `architecture.md` §4.
 - **Security audit and legal/regulatory review** — out of scope for an
   engineering build, both genuinely required before this moves real money.
+
+## What you need to do
+
+Everything above that was fixable from here has been fixed — contract
+naming/claims corrected, the real Attestcoin interface wired in throughout,
+real testnet infrastructure added, docs corrected to match. What's left
+needs either your credentials, your judgment call, or a conversation with
+Spacecoin's team — none of it is something more code from here can resolve:
+
+1. **Fund a Creditcoin CC3-testnet wallet and provide its private key** to
+   actually run `scripts/deploy-testnet.js`. Generate a wallet (e.g.
+   `npx hardhat run` a throwaway script, or any wallet tool), get testnet
+   tCTC from Creditcoin's faucet for that address, then put the private key
+   in `.env` as `CC3_TESTNET_PRIVATE_KEY`. This is the one step that
+   actually tests whether the real Attestcoin precompile responds the way
+   `architecture.md` §4a assumes.
+2. **Decide CoverageVault's relationship to Spacecoin's real
+   `TokenPaymentEscrow`** — stay fully independent (current state, and
+   arguably the more honest default), or additionally require some signal
+   from the real contract (e.g. a minimum recent claimed-data balance) as
+   a secondary eligibility check. This is a product call about what
+   "actively a Spacecoin customer" should mean, not something to guess at.
+3. **Get a WalletConnect Cloud project ID** (free, at
+   cloud.walletconnect.com) if you want the QR-code wallet-connect flow in
+   the app — injected wallets like MetaMask already work without it.
+4. **Talk to Spacecoin's team** about the one real open architectural
+   question left: is satellite telemetry reporting same-chain or
+   cross-chain? Everything downstream of that (whether the Attestcoin
+   precompile layer is even the right shape) depends on the answer.
+5. **Commission a security audit and legal/regulatory review** before any
+   of this touches real funds — both are genuinely out of scope for an
+   engineering pass, regardless of environment.
 
 ## License
 

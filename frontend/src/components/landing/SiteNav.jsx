@@ -26,8 +26,19 @@ export default function SiteNav({ home = false }) {
   return (
     <nav className={`site-nav ${scrolled ? "scrolled" : ""}`}>
       <div className="wrap">
-        <Link className="brand" to="/">
-          <span className="brand-mark" /> SpaceShield
+        <Link className="brand flex items-center gap-2.5 cursor-pointer group" to="/" title="SpaceShield Home">
+          <img
+            src="/logo-light.png"
+            alt="SpaceShield Logo"
+            style={{
+              height: "30px",
+              width: "auto",
+              objectFit: "contain",
+              filter: "drop-shadow(0 2px 6px rgba(47, 107, 79, 0.5))",
+            }}
+            className="transition-transform duration-200 group-hover:scale-105"
+          />
+          <span className="font-semibold tracking-tight text-emerald-50">SpaceShield</span>
         </Link>
         <div className="navlinks">
           {home ? (

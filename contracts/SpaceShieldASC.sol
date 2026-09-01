@@ -5,6 +5,39 @@ interface ISettlementContract {
     function registerSettlement(bytes32 outageId, address operator, bytes32 satelliteKey) external;
 }
 
+/// @dev The REAL Block Prover precompile interface - not a guess. Pulled
+///      directly from the usc-sdk package's shipped ABI
+///      (block-prover/block_prover.json, interface name
+///      INativeQueryVerifier), the same package Creditcoin's own Proof
+///      Builder tooling uses. An earlier version of this file guessed a
+///      flat verify(uint64,uint64,bytes,bytes,bytes) signature with raw
+///      bytes standing in for the proofs; the real precompile takes
+///      structured MerkleProof/ContinuityProof tuples, not opaque bytes.
+///      That guess would have reverted against the real precompile on
+///      every call.
+interface INativeQueryVerifier {
+    struct MerkleProofEntry {
+        bytes32 hash;
+        bool isLeft;
+    }
+    struct MerkleProof {
+        bytes32 root;
+        MerkleProofEntry[] siblings;
+    }
+    struct ContinuityProof {
+        bytes32 lowerEndpointDigest;
+        bytes32[] roots;
+    }
+
+    function verify(
+        uint64 chainKey,
+        uint64 height,
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
+    ) external view returns (bool);
+}
+
 /// @title SpaceShieldASC (Attestcoin Smart Contract)
 /// @notice Verifies a Spacecoin outage event's inclusion + continuity proof
 ///         via the Block Prover precompile, then registers a claimable
@@ -23,8 +56,8 @@ interface ISettlementContract {
 ///
 ///         Note on scope: this contract still verifies the OUTAGE ITSELF
 ///         via the Attestcoin precompile - that's a genuinely separate
-///         question from subscriber verification, which moved to
-///         SpacecoinEscrow (see SettlementContract.sol's docstring). An
+///         question from subscriber verification, which lives in
+///         CoverageVault (see SettlementContract.sol's docstring). An
 ///         outage is a physical/telemetry fact that still needs some form
 ///         of external attestation onto the chain regardless of whether
 ///         Spacecoin's payment layer is same-chain or cross-chain; that
@@ -108,8 +141,8 @@ contract SpaceShieldASC {
 
     /// @notice Called by a registered Oracle Worker once it has a proof in
     ///         hand. chainKey/blockHeight/encodedTx/merkleProof/
-    ///         continuityProof are exactly the arguments the PRD's
-    ///         precompile signature expects — see PRD §4, Component 3.
+    ///         continuityProof match INativeQueryVerifier.verify's real,
+    ///         confirmed signature (see the interface docstring above).
     ///
     ///         Each call is independently proof-checked against the
     ///         precompile (cheap: it's a native call, not re-verification
@@ -124,8 +157,8 @@ contract SpaceShieldASC {
         uint64 chainKey,
         uint64 blockHeight,
         bytes calldata encodedTx,
-        bytes calldata merkleProof,
-        bytes calldata continuityProof
+        INativeQueryVerifier.MerkleProof calldata merkleProof,
+        INativeQueryVerifier.ContinuityProof calldata continuityProof
     ) external returns (bool finalizedNow) {
         require(isOracle[msg.sender], "caller is not a registered oracle");
 
@@ -141,15 +174,13 @@ contract SpaceShieldASC {
         // a Spacecoin block, and that the block itself is part of a
         // continuous, unforked chain, without SpaceShield's own contracts
         // ever reading Spacecoin state directly. Each attesting oracle
-        // performs this check independently.
+        // performs this check independently. abi.encodeCall (not a manual
+        // signature string) so the compiler checks the argument types
+        // against INativeQueryVerifier.verify's real signature for us.
         (bool ok, bytes memory result) = BLOCK_PROVER_PRECOMPILE.call(
-            abi.encodeWithSignature(
-                "verify(uint64,uint64,bytes,bytes,bytes)",
-                chainKey,
-                blockHeight,
-                encodedTx,
-                merkleProof,
-                continuityProof
+            abi.encodeCall(
+                INativeQueryVerifier.verify,
+                (chainKey, blockHeight, encodedTx, merkleProof, continuityProof)
             )
         );
         require(ok, "precompile call failed");

@@ -61,16 +61,16 @@ export const cardData = [
     id: 4,
     idx: "04",
     location: "Creditcoin L2",
-    title: "Settlement Contract & Escrow",
-    subtitle: "Live Escrow Checks & Pull Compensation",
+    title: "Settlement Contract & Coverage Vault",
+    subtitle: "Live Coverage Checks & Pull Compensation",
     description:
-      "Holds operator SLA bond deposits and verifies subscriber eligibility directly against SpacecoinEscrow at claim time, executing instant pro-rata payout transfers without snapshot trust assumptions.",
+      "Holds operator SLA bond deposits and verifies subscriber eligibility directly against CoverageVault at claim time, executing instant pro-rata payout transfers without snapshot trust assumptions.",
     color: "rgba(79, 134, 247, 0.85)",
     glow: "#4f86f7",
     iconName: "Coins",
     code: `function claim(uint256 outageId) external {
-  uint256 activeRatio = SpacecoinEscrow.getCoverageRatio(msg.sender);
-  uint256 payout = calculateProRata(outageId, activeRatio);
+  bool active = vault.isActiveSubscriberByKey(satKey, msg.sender);
+  uint256 payout = calculateProRata(outageId, active);
   payable(msg.sender).transfer(payout);
 }`,
     badge: "Component 4 of 5",

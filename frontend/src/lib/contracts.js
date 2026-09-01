@@ -2,7 +2,7 @@
 // (single source of truth, imported directly), addresses come from the network
 // registry. `getContract(chainId, name)` hands a { address, abi } pair straight
 // to viem/wagmi, or null when that contract isn't deployed on that chain.
-import EscrowArtifact from "../../../artifacts-manual/SpacecoinEscrow.json";
+import EscrowArtifact from "../../../artifacts-manual/CoverageVault.json";
 import SettlementArtifact from "../../../artifacts-manual/SettlementContract.json";
 import AscArtifact from "../../../artifacts-manual/SpaceShieldASC.json";
 import SourceArtifact from "../../../artifacts-manual/MockSpacecoinSource.json";
