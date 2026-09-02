@@ -4,6 +4,7 @@ import AppLayout from "./components/nav/AppLayout";
 import Dashboard from "./screens/Dashboard";
 import Network from "./screens/Network";
 import History from "./screens/History";
+import Vision from "./screens/Vision";
 import Settings from "./screens/Settings";
 import Privacy from "./screens/Privacy";
 import NotFound from "./screens/NotFound";
@@ -20,6 +21,7 @@ export default function App() {
         <Route index element={<Dashboard />} />
         <Route path="network" element={<Network />} />
         <Route path="history" element={<History />} />
+        <Route path="vision" element={<Vision />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="/privacy" element={<Privacy />} />

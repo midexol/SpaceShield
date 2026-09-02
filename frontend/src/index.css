@@ -1196,6 +1196,110 @@ footer.site-footer {
   max-width: 640px;
 }
 
+/* Dashboard status hero — a real visual centerpiece instead of a plain
+   page-head + card. --green already resolves to the site's blue accent. */
+.dash-hero {
+  display: flex;
+  align-items: center;
+  gap: 22px;
+  padding: 26px 28px;
+  border-radius: 16px;
+  border: 1px solid var(--line);
+  background: var(--paper);
+  margin-bottom: 22px;
+  flex-wrap: wrap;
+}
+.dash-hero.active {
+  background: linear-gradient(135deg, var(--green-dim), var(--paper) 70%);
+}
+.dash-hero-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--stone);
+  border: 2px solid var(--line);
+  color: var(--ink-soft);
+  position: relative;
+}
+.dash-hero-icon.active {
+  background: var(--paper);
+  border-color: var(--green);
+  color: var(--green);
+}
+.dash-hero-icon.active::after {
+  content: "";
+  position: absolute;
+  inset: -6px;
+  border-radius: 50%;
+  border: 2px solid var(--green);
+  opacity: 0.5;
+  animation: dashPulse 2.4s ease-out infinite;
+}
+@keyframes dashPulse {
+  0% {
+    transform: scale(0.88);
+    opacity: 0.55;
+  }
+  100% {
+    transform: scale(1.35);
+    opacity: 0;
+  }
+}
+.dash-hero-body {
+  flex: 1;
+  min-width: 220px;
+}
+.dash-hero-eyebrow {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+  margin-bottom: 6px;
+}
+.dash-hero-status {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: clamp(22px, 3vw, 30px);
+  letter-spacing: -0.02em;
+  line-height: 1.1;
+}
+.dash-hero-sub {
+  color: var(--ink-soft);
+  font-size: 14px;
+  margin-top: 6px;
+  max-width: 440px;
+}
+.dash-hero-stats {
+  display: flex;
+  gap: 28px;
+  flex-shrink: 0;
+}
+.dash-hero-stat-num {
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 24px;
+  letter-spacing: -0.02em;
+  color: var(--ink);
+  font-variant-numeric: tabular-nums;
+}
+.dash-hero-stat-lab {
+  font-size: 11px;
+  color: var(--ink-soft);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-top: 2px;
+}
+@media (max-width: 560px) {
+  .dash-hero-stats {
+    gap: 20px;
+  }
+}
+
 /* Cards + grids */
 .grid {
   display: grid;

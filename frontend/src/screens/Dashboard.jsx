@@ -8,6 +8,7 @@
 import { useEffect, useState } from "react";
 import { useAccount, useReadContract, useWriteContract, useWaitForTransactionReceipt } from "wagmi";
 import { ConnectButton } from "@rainbow-me/rainbowkit";
+import { motion } from "motion/react";
 import { parseEther, zeroAddress } from "viem";
 import { Card, CardHead } from "../components/ui/Card";
 import { Tag } from "../components/ui/Badge";
@@ -193,97 +194,132 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div className="page-head">
-        <h1>Dashboard</h1>
-        <p className="lede">
-          {sub.isActive
-            ? "You're covered. Compensation is automatic — no claim forms."
-            : "Get protected: lock coverage for a satellite and get paid automatically on outages."}
-        </p>
-      </div>
-
-      {/* Coverage status */}
-      <Card>
-        <CardHead
-          title={`Coverage · ${satelliteId || "—"}`}
-          right={
-            sub.isActive ? <Tag tone="ok">covered</Tag> : <Tag tone="warn">not covered</Tag>
-          }
-        />
-
+      {/* Status hero — the one thing this page needs to say at a glance */}
+      <motion.div
+        className={`dash-hero ${sub.isActive ? "active" : ""}`}
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <div className={`dash-hero-icon ${sub.isActive ? "active" : ""}`}>
+          <Icon name="shield" size={30} />
+        </div>
+        <div className="dash-hero-body">
+          <div className="dash-hero-eyebrow">Dashboard · {satelliteId || "—"}</div>
+          <div className="dash-hero-status">
+            {sub.isActive ? "You're covered" : "Not protected yet"}
+          </div>
+          <div className="dash-hero-sub">
+            {sub.isActive
+              ? "Compensation is automatic — no claim forms, nothing to track."
+              : "Lock coverage below and get paid automatically the moment your satellite goes dark."}
+          </div>
+        </div>
         {sub.isActive ? (
-          <>
-            <div className="kv">
-              <span className="k">Covered since</span>
-              <span className="v">{formatDateTime(sub.since)}</span>
+          <div className="dash-hero-stats">
+            <div className="dash-hero-stat">
+              <div className="dash-hero-stat-num">{protectedFor}</div>
+              <div className="dash-hero-stat-lab">Protected for</div>
             </div>
-            <div className="kv">
-              <span className="k">Protected for</span>
-              <span className="v">{protectedFor}</span>
+            <div className="dash-hero-stat">
+              <div className="dash-hero-stat-num">
+                {bondRow ? formatEth(bondRow.perUser, { symbol, maxFrac: 3 }) : "—"}
+              </div>
+              <div className="dash-hero-stat-lab">Max payout</div>
             </div>
-            <div className="kv">
-              <span className="k">Max payout / outage</span>
-              <span className="v">
-                {bondRow ? formatEth(bondRow.perUser, { symbol, maxFrac: 4 }) : "—"}
-              </span>
-            </div>
-            <div className="row" style={{ marginTop: 16 }}>
-              <button
-                className="btn ghost small"
-                onClick={withdraw}
-                disabled={busy}
-              >
-                {pending === "withdraw" && busy ? "Withdrawing…" : "Withdraw coverage"}
-              </button>
-            </div>
-          </>
-        ) : (
-          <>
-            <p className="hint" style={{ marginBottom: 14 }}>
-              Lock coverage with the registered operator. Your stake keeps coverage active; payouts
-              come from the operator's bond, not your stake.
-            </p>
-            <label className="field-label" htmlFor="cover-amt">
-              Coverage stake
-            </label>
-            <div className="input-suffix">
-              <input
-                id="cover-amt"
-                className="input"
-                inputMode="decimal"
-                value={amount}
-                onChange={(e) => setAmount(e.target.value)}
-                placeholder="0.1"
-              />
-              <span className="suffix">{symbol}</span>
-            </div>
-            {!operatorValid ? (
-              <p className="hint mono" style={{ marginTop: 10 }}>
-                No operator is registered for {satelliteId} yet — run the deploy script.
+          </div>
+        ) : null}
+      </motion.div>
+
+      <motion.div
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.08 }}
+      >
+        <Card>
+          <CardHead
+            title={sub.isActive ? "Coverage details" : "Get protected"}
+            right={sub.isActive ? <Tag tone="ok">covered</Tag> : <Tag tone="warn">not covered</Tag>}
+          />
+
+          {sub.isActive ? (
+            <>
+              <div className="kv">
+                <span className="k">Covered since</span>
+                <span className="v">{formatDateTime(sub.since)}</span>
+              </div>
+              <div className="kv">
+                <span className="k">Protected for</span>
+                <span className="v">{protectedFor}</span>
+              </div>
+              <div className="kv">
+                <span className="k">Max payout / outage</span>
+                <span className="v">
+                  {bondRow ? formatEth(bondRow.perUser, { symbol, maxFrac: 4 }) : "—"}
+                </span>
+              </div>
+              <div className="row" style={{ marginTop: 16 }}>
+                <button
+                  className="btn ghost small"
+                  onClick={withdraw}
+                  disabled={busy}
+                >
+                  {pending === "withdraw" && busy ? "Withdrawing…" : "Withdraw coverage"}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
+              <p className="hint" style={{ marginBottom: 14 }}>
+                Lock coverage with the registered operator. Your stake keeps coverage active; payouts
+                come from the operator's bond, not your stake.
               </p>
-            ) : (
-              <p className="hint mono" style={{ marginTop: 10 }}>
-                Operator {shortHash(operator)} · payout{" "}
-                {bondRow ? formatEth(bondRow.perUser, { symbol, maxFrac: 4 }) : "—"} per outage
-              </p>
-            )}
-            <div className="row" style={{ marginTop: 16 }}>
-              <button
-                className="btn green"
-                onClick={subscribe}
-                disabled={busy || !operatorValid || !amtValid}
-              >
-                {pending === "subscribe" && busy ? "Getting protected…" : "Get protected →"}
-              </button>
-            </div>
-          </>
-        )}
-        {errBox}
-      </Card>
+              <label className="field-label" htmlFor="cover-amt">
+                Coverage stake
+              </label>
+              <div className="input-suffix">
+                <input
+                  id="cover-amt"
+                  className="input"
+                  inputMode="decimal"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0.1"
+                />
+                <span className="suffix">{symbol}</span>
+              </div>
+              {!operatorValid ? (
+                <p className="hint mono" style={{ marginTop: 10 }}>
+                  No operator is registered for {satelliteId} yet — run the deploy script.
+                </p>
+              ) : (
+                <p className="hint mono" style={{ marginTop: 10 }}>
+                  Operator {shortHash(operator)} · payout{" "}
+                  {bondRow ? formatEth(bondRow.perUser, { symbol, maxFrac: 4 }) : "—"} per outage
+                </p>
+              )}
+              <div className="row" style={{ marginTop: 16 }}>
+                <button
+                  className="btn green"
+                  onClick={subscribe}
+                  disabled={busy || !operatorValid || !amtValid}
+                >
+                  {pending === "subscribe" && busy ? "Getting protected…" : "Get protected →"}
+                </button>
+              </div>
+            </>
+          )}
+          {errBox}
+        </Card>
+      </motion.div>
 
       {/* Active-subscriber extras */}
       {sub.isActive ? (
-        <>
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.16 }}
+        >
           {/* Backing bond */}
           <Card style={{ marginTop: 22 }}>
             <CardHead
@@ -420,7 +456,7 @@ export default function Dashboard() {
               </div>
             </Card>
           ) : null}
-        </>
+        </motion.div>
       ) : null}
     </div>
   );

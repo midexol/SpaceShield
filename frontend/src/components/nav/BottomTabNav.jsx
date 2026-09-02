@@ -5,6 +5,7 @@ const TABS = [
   { to: "/app", end: true, ic: "home", label: "Home" },
   { to: "/app/network", end: false, ic: "signal", label: "Network" },
   { to: "/app/history", end: false, ic: "clock", label: "History" },
+  { to: "/app/vision", end: false, ic: "compass", label: "Vision" },
   { to: "/app/settings", end: false, ic: "settings", label: "Profile" },
 ];
 

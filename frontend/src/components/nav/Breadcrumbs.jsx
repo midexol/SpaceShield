@@ -1,7 +1,7 @@
 import { Link, useLocation } from "react-router-dom";
 import Icon from "../ui/Icon";
 
-const LABELS = { network: "Network", history: "History", settings: "Settings" };
+const LABELS = { network: "Network", history: "History", vision: "Vision", settings: "Settings" };
 
 // App breadcrumbs: Home / Dashboard / <Section>. The trailing crumb is the
 // current page and renders as plain text (not a link).
