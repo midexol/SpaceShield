@@ -1,4 +1,5 @@
 require("@nomicfoundation/hardhat-toolbox");
+require("dotenv").config();
 
 // CC3_TESTNET_PRIVATE_KEY is optional — without it, `creditcoinTestnet` is
 // still a valid network target for read-only tasks (balance checks, etc.),

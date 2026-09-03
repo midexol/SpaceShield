@@ -7,18 +7,31 @@ pragma solidity ^0.8.24;
 ///         for it, it's part of the node client. Locally there is nothing to
 ///         call at that address, so this contract is deployed there instead
 ///         (see test/spaceshield.test.js, which uses hardhat_setCode to place
-///         it at the real precompile address) purely so SpaceShieldASC's
-///         call site doesn't have to change between test and production.
+///         it at the real precompile address).
 ///
-///         The verify() signature below is NOT a guess - it's the real
-///         INativeQueryVerifier.verify signature from the usc-sdk package
-///         (published as the "usc-sdk" scoped npm package under the gluwa
-///         org), the same one Creditcoin's own Proof Builder tooling uses.
-///         Its shipped ABI lives at block-prover/block_prover.json inside
-///         that package. Matching it exactly
-///         means SpaceShieldASC's calldata is byte-for-byte what it would
-///         send on real Creditcoin — the only thing that changes going to
-///         production is which address that calldata lands on.
+///         CORRECTION: this used to be called from inside SpaceShieldASC's
+///         verifyOutage(). Testing against the real precompile on Creditcoin
+///         CC3-testnet proved that doesn't work there - it only answers
+///         calls where it is the transaction's direct, top-level target,
+///         never a call nested inside another contract's execution (see
+///         SpaceShieldASC.sol's docstring and architecture.md §4a for the
+///         full elimination trail). So this mock is now called top-level
+///         too, exactly the way oracle-worker/worker.js calls the real
+///         precompile via usc-sdk's PrecompileBlockProver: verify() (a plain
+///         eth_call, mirrors verifySingle) to check before committing to
+///         gas, then verifyAndEmit() as a real mined transaction (mirrors
+///         verifyAndEmitSingle) to get a genuine, independently-checkable
+///         tx hash to record on SpaceShieldASC as precompileTxHash.
+///
+///         Both function signatures below are NOT a guess - they're the
+///         real INativeQueryVerifier signatures from the usc-sdk package's
+///         shipped ABI (block-prover/block_prover.json), the same one
+///         Creditcoin's own Proof Builder tooling uses. Matching them
+///         exactly means the calldata this mock accepts is byte-for-byte
+///         what the same call would send on real Creditcoin - the only
+///         thing that changes going to production is which address it
+///         lands on, and who calls it (oracle-worker directly, not this
+///         repo's contracts).
 ///
 ///         DO NOT deploy this to Creditcoin. On Creditcoin, delete this
 ///         contract entirely — 0x0FD2 already has the real precompile.
@@ -43,6 +56,8 @@ contract MockBlockProver {
         bytes32[] roots;
     }
 
+    event TransactionVerified(uint64 indexed chainKey, uint64 indexed height, uint64 transactionIndex);
+
     function verify(
         uint64, /* chainKey */
         uint64, /* height */
@@ -50,6 +65,30 @@ contract MockBlockProver {
         MerkleProof calldata merkleProof,
         ContinuityProof calldata continuityProof
     ) external pure returns (bool) {
+        return _check(encodedTransaction, merkleProof, continuityProof);
+    }
+
+    /// @notice Real precompile behavior per usc-sdk's own docs: submits a
+    ///         state-changing transaction, reverts on failed verification,
+    ///         emits TransactionVerified on success.
+    function verifyAndEmit(
+        uint64 chainKey,
+        uint64 height,
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
+    ) external returns (bool) {
+        require(_check(encodedTransaction, merkleProof, continuityProof), "proof rejected");
+        uint64 txIndex = uint64(merkleProof.siblings.length);
+        emit TransactionVerified(chainKey, height, txIndex);
+        return true;
+    }
+
+    function _check(
+        bytes calldata encodedTransaction,
+        MerkleProof calldata merkleProof,
+        ContinuityProof calldata continuityProof
+    ) internal pure returns (bool) {
         require(encodedTransaction.length > 0, "empty tx");
         require(continuityProof.roots.length > 0, "empty continuity proof");
 

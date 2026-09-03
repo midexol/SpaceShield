@@ -6,6 +6,7 @@ import EscrowArtifact from "../../../artifacts-manual/CoverageVault.json";
 import SettlementArtifact from "../../../artifacts-manual/SettlementContract.json";
 import AscArtifact from "../../../artifacts-manual/SpaceShieldASC.json";
 import SourceArtifact from "../../../artifacts-manual/MockSpacecoinSource.json";
+import ProverArtifact from "../../../artifacts-manual/MockBlockProver.json";
 import { getNetwork } from "../config/networks";
 
 export const ABIS = {
@@ -13,6 +14,7 @@ export const ABIS = {
   settlement: SettlementArtifact.abi,
   asc: AscArtifact.abi,
   source: SourceArtifact.abi,
+  prover: ProverArtifact.abi,
 };
 
 export function getContract(chainId, name) {

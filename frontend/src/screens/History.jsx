@@ -46,7 +46,7 @@ function ProofChain({ it, net, symbol }) {
       label: "Attestcoin Verified",
       text:
         active >= 1
-          ? `Merkle + continuity proof checked synchronously by the Block Prover precompile.`
+          ? `Merkle + continuity proof checked by the Block Prover precompile itself, in its own top-level transaction — the oracle then reports that result on-chain.`
           : "Awaiting cryptographic verification.",
       hash:
         active >= 1

@@ -11,10 +11,12 @@
   "license": "ISC",
   "devDependencies": {
     "@nomicfoundation/hardhat-toolbox": "^5.0.0",
+    "dotenv": "^17.4.2",
     "hardhat": "^2.29.1",
     "solc": "^0.8.24"
   },
   "dependencies": {
+    "@gluwa/usc-sdk": "^0.18.0",
     "express": "^5.2.1"
   }
 }

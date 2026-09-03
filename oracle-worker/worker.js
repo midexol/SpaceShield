@@ -4,9 +4,15 @@
  * Listens for a trigger (here: an HTTP POST from the AI Agent — in
  * production this can equally be a direct chain-event listener), then:
  *   1. Reads the current on-chain status from MockSpacecoinSource
- *   2. Waits for block attestation on Creditcoin (skipped locally — instant)
- *   3. Builds a proof via the Proof Builder service (mocked locally)
- *   4. Submits it to the ASC, which verifies + triggers settlement
+ *   2. Builds a proof via the Proof Builder service (mocked locally)
+ *   3. Verifies that proof against the Block Prover precompile itself, as
+ *      its OWN top-level transaction (see precompileClient.js — this step
+ *      can no longer happen inside SpaceShieldASC; proven by testing
+ *      against real Creditcoin CC3-testnet, see SpaceShieldASC.sol's
+ *      docstring and architecture.md §4a)
+ *   4. Only if that succeeds, reports the result to the ASC along with the
+ *      precompile transaction's hash as an audit trail, which verifies +
+ *      triggers settlement once enough oracles agree
  *   5. Handles retries and de-dup (an outage that's already `settled` on
  *      SpaceShieldASC/SettlementContract simply reverts harmlessly, so a
  *      duplicate trigger costs a failed tx, not a double-payout)
@@ -18,6 +24,7 @@
 const express = require("express");
 const { ethers } = require("ethers");
 const { encodeOutageTx, buildMockProof } = require("./proofBuilder");
+const { verifyViaPrecompile } = require("./precompileClient");
 
 // Real, generated ABIs — not hand-typed fragments. A hand-typed ASC_ABI
 // fragment here previously hardcoded `bytes merkleProof, bytes
@@ -45,15 +52,19 @@ async function handleOutageTrigger({ satelliteId, chainKey, blockHeight, provide
   });
   const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-  const asc = new ethers.Contract(ascAddress, ASC_ABI, signer);
-  const tx = await asc.verifyOutage(
-    satelliteId,
+  const { verified, precompileTxHash } = await verifyViaPrecompile(signer, {
     chainKey,
-    blockHeight,
-    encodedTx,
+    height: blockHeight,
+    encodedTransaction: encodedTx,
     merkleProof,
-    continuityProof
-  );
+    continuityProof,
+  });
+  if (!verified) {
+    throw new Error("Block Prover precompile rejected the proof — refusing to attest");
+  }
+
+  const asc = new ethers.Contract(ascAddress, ASC_ABI, signer);
+  const tx = await asc.verifyOutage(satelliteId, blockHeight, encodedTx, precompileTxHash);
   const receipt = await tx.wait();
   return receipt;
 }

@@ -3,9 +3,30 @@ const { ethers, network } = require("hardhat");
 const fs = require("fs");
 const path = require("path");
 const { encodeOutageTx, buildMockProof } = require("../oracle-worker/proofBuilder");
+const { verifyViaPrecompile } = require("../oracle-worker/precompileClient");
 
 const PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000000FD2";
 const CONFIRMATION_FLOOR = 5;
+const CHAIN_KEY = 1;
+
+// Mirrors exactly what oracle-worker/worker.js does: verify against the
+// Block Prover precompile top-level first (proven to be the only call
+// shape the real precompile answers - see SpaceShieldASC.sol's docstring),
+// then report the result + tx hash to the ASC. Throws if the precompile
+// rejects the proof, same as the real worker would refuse to attest.
+async function attestOutage(asc, oracleSigner, satelliteId, blockHeight, encodedTx, merkleProof, continuityProof) {
+  const { verified, precompileTxHash } = await verifyViaPrecompile(oracleSigner, {
+    chainKey: CHAIN_KEY,
+    height: blockHeight,
+    encodedTransaction: encodedTx,
+    merkleProof,
+    continuityProof,
+  });
+  if (!verified) {
+    throw new Error("precompile rejected proof");
+  }
+  return asc.connect(oracleSigner).verifyOutage(satelliteId, blockHeight, encodedTx, precompileTxHash);
+}
 
 const ARTIFACTS_DIR = path.join(__dirname, "..", "artifacts-manual");
 function loadArtifact(name) {
@@ -110,9 +131,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-    const tx = await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    const tx = await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const receipt = await tx.wait();
 
     await expect(tx).to.emit(asc, "OutageVerified");
@@ -146,9 +165,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
     expect(await escrow.isActiveSubscriber(SATELLITE_ID, await strangerUser.getAddress())).to.equal(false);
@@ -162,9 +179,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
     await escrow.connect(userA).withdrawCoverage(SATELLITE_ID);
@@ -184,9 +199,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
-    const tx = await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    const tx = await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     await tx.wait();
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
@@ -228,9 +241,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
     const TWO_DAYS = 2 * 24 * 60 * 60;
@@ -251,9 +262,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
     await settlement.connect(userA).claim(outageId);
@@ -265,33 +274,36 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
 
     await expect(
-      asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof)
+      attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof)
     ).to.be.revertedWith("already settled");
   });
 
-  it("rejects a malformed proof", async function () {
+  it("the precompile itself catches a malformed proof, before an oracle can ever attest on-chain", async function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     // Correctly-shaped per INativeQueryVerifier.MerkleProof, but the root
-    // doesn't commit to encodedTx — MockBlockProver's check should reject it.
+    // doesn't commit to encodedTx — the precompile's check should reject it.
+    // This is no longer something SpaceShieldASC can catch itself (see its
+    // docstring) — it's caught off-chain, by the oracle, exactly the way
+    // oracle-worker/worker.js does it via verifyViaPrecompile.
     const forgedMerkleProof = {
       root: ethers.keccak256(ethers.toUtf8Bytes("not the real tx")),
       siblings: [],
     };
     const continuityProof = { lowerEndpointDigest: ethers.ZeroHash, roots: [ethers.ZeroHash] };
 
-    await expect(
-      asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, forgedMerkleProof, continuityProof)
-    ).to.be.revertedWith("proof rejected");
+    const { verified, precompileTxHash } = await verifyViaPrecompile(oracle1, {
+      chainKey: CHAIN_KEY,
+      height: Number(status.lastContact),
+      encodedTransaction: encodedTx,
+      merkleProof: forgedMerkleProof,
+      continuityProof,
+    });
+    expect(verified).to.equal(false);
+    expect(precompileTxHash).to.equal(null);
   });
 
   it("rejects verifyOutage from an unregistered oracle", async function () {
@@ -300,9 +312,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
     await expect(
-      asc
-        .connect(strangerUser)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof)
+      attestOutage(asc, strangerUser, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof)
     ).to.be.revertedWith("caller is not a registered oracle");
   });
 
@@ -326,9 +336,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
     const status = await reportOutage(source, SATELLITE_ID);
     const encodedTx = buildEncodedTx(status, SATELLITE_ID);
     const { merkleProof, continuityProof } = buildMockProof(encodedTx);
-    await asc
-      .connect(oracle1)
-      .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+    await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
     const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
     await escrow.connect(userB).lockCoverage(SATELLITE_ID, await operator.getAddress(), {
@@ -375,9 +383,7 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
       const encodedTx = buildEncodedTx(status, SATELLITE_ID);
       const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-      const tx1 = await asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+      const tx1 = await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
       await expect(tx1).to.emit(asc, "OracleAttested");
       await expect(tx1).to.not.emit(asc, "OutageVerified");
       await expect(tx1).to.not.emit(settlement, "OutageRegistered");
@@ -393,12 +399,8 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
       const encodedTx = buildEncodedTx(status, SATELLITE_ID);
       const { merkleProof, continuityProof } = buildMockProof(encodedTx);
 
-      await asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
-      const tx2 = await asc
-        .connect(oracle2)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+      await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+      const tx2 = await attestOutage(asc, oracle2, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
 
       await expect(tx2).to.emit(asc, "OutageVerified");
       await expect(tx2).to.emit(settlement, "OutageRegistered");
@@ -414,12 +416,8 @@ describe("SpaceShield — end-to-end settlement pipeline", function () {
       const { merkleProof, continuityProof } = buildMockProof(encodedTx);
       const outageId = computeOutageId(SATELLITE_ID, Number(status.lastContact), encodedTx);
 
-      await asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
-      await asc
-        .connect(oracle1)
-        .verifyOutage(SATELLITE_ID, 1, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+      await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
+      await attestOutage(asc, oracle1, SATELLITE_ID, Number(status.lastContact), encodedTx, merkleProof, continuityProof);
 
       expect(await asc.attestationCount(outageId)).to.equal(1);
       expect(await asc.finalized(outageId)).to.equal(false);

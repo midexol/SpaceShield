@@ -32,8 +32,11 @@ trust each other:
    cross-checks it against an independent public tracker (real NORAD/CelesTrak
    data) before it will trigger anything.
 2. **Verify** — Attestcoin's native Block Prover precompile (`0x0FD2`)
-   cryptographically checks a Merkle + continuity proof of the outage, in a
-   single atomic call. Not an opinion — a proof.
+   cryptographically checks a Merkle + continuity proof of the outage. Not
+   an opinion — a proof, checked directly against the real precompile by
+   each independent oracle (confirmed, by testing against real Creditcoin
+   CC3-testnet, to only answer top-level calls — see `architecture.md`
+   §4a for why that's not a single atomic in-contract call).
 3. **Settle** — Creditcoin pays out automatically from the operator's
    pre-locked bond, pro-rated to how long each subscriber was actually
    covered. Subscribers pull their own payout with one transaction. No case
@@ -60,9 +63,9 @@ sequenceDiagram
     PT-->>AI: agrees — outage is real
     AI->>OW: trigger (HTTP)
     OW->>OW: build proof (Merkle + continuity)
-    OW->>ASC: verifyOutage(proof)
-    ASC->>BP: verify(chainKey, height, tx, merkleProof, continuityProof)
-    BP-->>ASC: proof valid
+    OW->>BP: verify(chainKey, height, tx, merkleProof, continuityProof) — top-level
+    BP-->>OW: proof valid, tx hash
+    OW->>ASC: verifyOutage(satelliteId, blockHeight, tx, precompileTxHash)
     ASC->>ASC: M-of-N oracle attestation met
     ASC->>ST: registerSettlement(outageId)
     Note over ST: claimable — no one paid yet
@@ -103,8 +106,8 @@ graph TB
     AGENT -->|cross-check| TRACK
     TRACK -->|confirms| AGENT
     AGENT -->|trigger| WORKER
-    WORKER -->|verify proof| ASC
-    ASC -->|verify struct proof| PROVER
+    WORKER -->|verify proof, top-level tx| PROVER
+    WORKER -->|report result + tx hash| ASC
     ASC -->|registerSettlement| SETTLE
     SETTLE -.->|live eligibility read| CV
     USER -->|lockCoverage| CV
@@ -130,10 +133,14 @@ reasoning, including the addresses of the real contract that was found.
 
 **Why nobody has to trust anybody:** the AI Agent never touches money — it
 can only ever cause a proof attempt, and a fabricated proof is rejected by
-the precompile. A single oracle can't finalize alone once
-`attestationThreshold > 1`. Anyone claiming compensation is checked live
-against `CoverageVault` — SpaceShield's own on-chain coverage record, not a
-caller-supplied list. Full trust-boundary table in
+the precompile itself when the oracle checks it (confirmed against real
+Creditcoin CC3-testnet — see `architecture.md` §4a for why that check now
+happens off-chain, by the oracle, rather than inside `SpaceShieldASC`). A
+single oracle can't finalize alone once `attestationThreshold > 1` — that
+threshold carries more of the trust load precisely because the contract
+itself can no longer re-verify the proof math. Anyone claiming compensation
+is checked live against `CoverageVault` — SpaceShield's own on-chain
+coverage record, not a caller-supplied list. Full trust-boundary table in
 [`architecture.md`](architecture.md), §6.
 
 ## Proven three ways
@@ -167,7 +174,7 @@ faked.
 | Contract logic (bonding, pull-based claims, live coverage-based subscriber verification, pro-rata compensation, M-of-N oracle attestation, treasury-routed penalties, idempotent settlement) | **Real** — the actual code that would ship |
 | Subscriber coverage (`CoverageVault.sol`) | **Real, SpaceShield's own contract** — not a model of Spacecoin's payment system (an earlier version incorrectly claimed to be; see `architecture.md` §4 for what the real Spacecoin contract turned out to be and why it can't serve this purpose) |
 | Attestcoin Block Prover interface | **Real ABI**, confirmed from the `usc-sdk` package's shipped artifacts (interface `INativeQueryVerifier`) — an earlier version guessed a flat-bytes signature that would have reverted against the real precompile on every call |
-| Attestcoin Block Prover precompile itself | **Mocked locally** (`MockBlockProver.sol`, installed at the real `0x0FD2` address via `hardhat_setCode`, now speaking the real ABI byte-for-byte) — **tested for real against CC3-testnet** (2026-09-01): `verifyOutage()` reverted with `"precompile call failed"`, meaning nothing at `0x0FD2` on that network currently answers to the confirmed real interface. See `architecture.md` §4a |
+| Attestcoin Block Prover precompile itself | **Confirmed real and live** on Creditcoin CC3-testnet (tested 2026-09-01) — but only when called top-level (as a transaction's direct target), never nested inside another contract's execution. That's a real constraint discovered by testing, not a guess, and it changed the architecture: verification now happens off-chain, by the Oracle Worker, calling the precompile directly (`oracle-worker/precompileClient.js`); `SpaceShieldASC.verifyOutage()` no longer calls it at all. Locally, `MockBlockProver.sol` (installed at the real `0x0FD2` address via `hardhat_setCode`) speaks the same real ABI and is called the same top-level way. See `architecture.md` §4a for the full elimination trail |
 | Spacecoin's satellite-status/telemetry reporting | **Mocked** — same-chain-vs-cross-chain is a genuine open question, see `architecture.md` §3 |
 | Proof *shape* (Merkle/continuity struct format) | **Real** — matches the confirmed real precompile interface |
 | Proof *content* | **Fabricated** — there's no real Spacecoin transaction yet to build a genuine proof from; swapping `oracle-worker/proofBuilder.js`'s body for a real `usc-sdk` `ProofBuilder` call is the remaining step, once telemetry (above) is real |
@@ -236,37 +243,56 @@ that network, which this repo cannot confirm from a read-only scan).
 
 ### Live testnet deployment
 
-Deployed for real on Creditcoin CC3-testnet, 2026-09-01 (see
+Deployed for real on Creditcoin CC3-testnet, 2026-09-03 (see
 `deployment.testnet.json`; addresses also below for anyone reading this
-without that file). Operator, oracle, and treasury all point at the same
-deployer address — a single-key solo deployment, not a multi-party one; see
-`scripts/deploy-testnet.js`'s header for why that's the sane default for a
-first real deployment.
+without that file). This is a redeployment of the corrected
+`SpaceShieldASC` — the 2026-09-01 deployment's addresses are superseded;
+its `verifyOutage()` called the precompile internally, which the testing
+below proved doesn't work on real Creditcoin. Operator, oracle, and
+treasury all point at the same deployer address — a single-key solo
+deployment, not a multi-party one; see `scripts/deploy-testnet.js`'s
+header for why that's the sane default for a first real deployment.
 
 | Contract | Address |
 |---|---|
-| MockSpacecoinSource | [`0xa221F85CD183427F755Cf23bc7e799ec44B4D165`](https://creditcoin-testnet.blockscout.com/address/0xa221F85CD183427F755Cf23bc7e799ec44B4D165) |
-| CoverageVault | [`0xc4F3a0311B9f87B48b406bDA890E7D18357D5A56`](https://creditcoin-testnet.blockscout.com/address/0xc4F3a0311B9f87B48b406bDA890E7D18357D5A56) |
-| SettlementContract | [`0x66C3BFC91CE2Ffdfd835c81D64FF78F06A5eD7b5`](https://creditcoin-testnet.blockscout.com/address/0x66C3BFC91CE2Ffdfd835c81D64FF78F06A5eD7b5) |
-| SpaceShieldASC | [`0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656`](https://creditcoin-testnet.blockscout.com/address/0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656) |
+| MockSpacecoinSource | [`0xBDBFCFa52d153255CFC64a18e552ff826c53c0B7`](https://creditcoin-testnet.blockscout.com/address/0xBDBFCFa52d153255CFC64a18e552ff826c53c0B7) |
+| CoverageVault | [`0xC1Db5E73A139c6Fd4Eac6321ee31F7876d8f1d34`](https://creditcoin-testnet.blockscout.com/address/0xC1Db5E73A139c6Fd4Eac6321ee31F7876d8f1d34) |
+| SettlementContract | [`0xF5F31F256Dcd5b27f480600F8B660D936Be4c4Ec`](https://creditcoin-testnet.blockscout.com/address/0xF5F31F256Dcd5b27f480600F8B660D936Be4c4Ec) |
+| SpaceShieldASC | [`0xC1d9eA6DeDD6C1f1290220DC91fbC8fD2b134C97`](https://creditcoin-testnet.blockscout.com/address/0xC1d9eA6DeDD6C1f1290220DC91fbC8fD2b134C97) |
 
-**The one real thing this deployment already tested: the Attestcoin
-precompile question.** A real `verifyOutage()` call against the real
-`SpaceShieldASC` above reverted with `"precompile call failed"` — nothing
-at `0x0FD2` on this testnet currently answers to the confirmed real
-`INativeQueryVerifier` interface. That's not a bug in this repo to fix;
-it's the actual, current answer, and it's now a concrete question ("we
-called `verify(...)` at `0x0FD2` on CC3-testnet and it reverted — is the
-precompile live there?") to put to Creditcoin/Gluwa directly, not a
-hypothetical one. See `architecture.md` §4a.
+**The precompile question this deployment exists to answer, resolved by
+elimination, not assumption.** A real `verifyOutage()` call against the
+*previous* deployment's `SpaceShieldASC` (which still called the
+precompile internally) reverted with `"precompile call failed"`. That
+looked like "nothing's there." Follow-up top-level calls — `usc-sdk`'s own
+client, and a hand-rolled equivalent — proved otherwise: the precompile
+IS live at `0x0FD2` and returns a real, specific rejection of a fake proof
+(`"Merkle proof validation failed"`). The constraint was call context, not
+existence — the precompile only answers a transaction where it's the
+direct, top-level target, never one nested inside another contract. This
+redeployment's `SpaceShieldASC` reflects that: `verifyOutage()` no longer
+calls `0x0FD2` at all; the Oracle Worker does, directly
+(`oracle-worker/precompileClient.js`), and reports the result. Full
+elimination trail in `architecture.md` §4a; reproduce the precompile check
+itself with `node scripts/check-precompile.js --network
+creditcoinTestnet`.
+
+Note: a full real settlement on this testnet deployment still can't
+complete end-to-end yet — not because of the precompile (that's resolved),
+but because the proof *content* the Oracle Worker builds is still
+fabricated (`oracle-worker/proofBuilder.js`), since there's no real
+Spacecoin transaction yet to build a genuine Merkle proof from. Submitting
+it will correctly get rejected by the real precompile, exactly like
+`check-precompile.js` demonstrates — that's the real precompile doing its
+job, not a bug.
 
 ## Structure
 
 ```
 contracts/          Solidity — telemetry source, coverage vault, ASC, settlement
 agent/               Python — AI detection agent + real CelesTrak client
-oracle-worker/       Node — HTTP trigger → proof → submit
-scripts/             build / deploy (local + real testnet) / bond-health monitor
+oracle-worker/       Node — HTTP trigger → proof → verify against precompile → submit
+scripts/             build / deploy (local + real testnet) / precompile check / bond-health monitor
 test/                16 end-to-end + failure-mode integration tests
 frontend/            React + wagmi/RainbowKit — marketing site + dApp
 architecture.md      System design, trust boundaries, decision log
@@ -283,11 +309,6 @@ for how this list connects to the design decisions above:
 - **Real Attestcoin proof content** — the proof *shape* is now confirmed
   real; the proof *content* is still fabricated because there's no real
   Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
-- Whether Creditcoin CC3-testnet's `0x0FD2` actually carries the real
-  Block Prover precompile with the confirmed interface — **now tested**,
-  and as of 2026-09-01 the answer is no (see "Live testnet deployment"
-  above). Needs a response from Creditcoin/Gluwa, not more testing from
-  this side.
 - Oracle Worker persistence/retry queue beyond contract-level idempotency.
 - Multi-satellite support is architecturally ready (everything's keyed by
   `satelliteId`) but never load-tested with more than one.
@@ -311,11 +332,12 @@ Spacecoin's team — none of it is something more code from here can resolve:
 1. ~~Fund a Creditcoin CC3-testnet wallet and provide its private key~~ —
    **done, 2026-09-01.** Real deployment live, addresses in "Live testnet
    deployment" above. It also answered the question this step existed to
-   answer: the real Attestcoin precompile does not currently respond at
-   `0x0FD2` on this testnet. **New action:** raise this with
-   Creditcoin/Gluwa directly — "we called `verifyOutage()` against a real
-   deployed ASC on CC3-testnet and it reverted at the precompile call" is
-   now a concrete, reproducible report, not a hypothetical.
+   answer, by elimination: the real Attestcoin precompile IS live at
+   `0x0FD2`, but only answers a top-level call, never one nested inside
+   another contract — see `architecture.md` §4a. **That finding has now
+   been built into the code**: `SpaceShieldASC.verifyOutage()` no longer
+   calls the precompile itself; the Oracle Worker does, directly, as its
+   own transaction. No further action needed on this item.
 2. **Decide CoverageVault's relationship to Spacecoin's real
    `TokenPaymentEscrow`** — stay fully independent (current state, and
    arguably the more honest default), or additionally require some signal

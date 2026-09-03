@@ -244,24 +244,65 @@ source — now imports the real generated ABIs from `artifacts-manual/`
 instead, which makes this exact class of silent drift impossible going
 forward), and `test/spaceshield.test.js`'s malformed-proof fixture.
 
-**Update — actually tested, and it's not there (yet):** with a real deployed
-`SpaceShieldASC` and a real funded oracle key, `verifyOutage()` was called
-against CC3-testnet for real. It reverted with `"precompile call failed"` —
-the low-level call to `0x0FD2` itself did not succeed. `eth_getCode` on that
-address had already returned empty, which is *consistent* with a genuine
-precompile (precompiles are native VM logic, not deployed bytecode, the
-same way Ethereum's own `ecrecover` at `0x01` shows no code) but doesn't by
-itself prove one's there. This second, functional test is stronger evidence
-than the bytecode check alone, and it points the other way: as of this
-deployment (SAT-014 / ASC at `0xBcAE9e419B84a0279F3C9B9A4FFa56B05dEbA656`,
-tested 2026-09-01), nothing at `0x0FD2` on CC3-testnet responds to
-`INativeQueryVerifier.verify`. That could mean the precompile isn't rolled
-out to this testnet yet, isn't live at this address on this network, or
-(less likely, since the interface came from the SDK's own shipped ABI) the
-real interface differs further from what's implemented here. Not a reason
-to guess further — this is exactly the kind of question to put to
-Creditcoin/Gluwa directly now that there's a concrete, reproducible
-failure to describe, rather than a hypothetical one.
+**Update — the precompile IS live. The real constraint was call context, not
+existence.** First test: `SpaceShieldASC.verifyOutage()`, called for real
+against CC3-testnet with a real funded oracle key, reverted with
+`"precompile call failed"`. That looked like "nothing's there." It wasn't —
+it was testing the wrong thing.
+
+Three follow-up calls isolated the actual variable:
+
+1. `usc-sdk`'s own official `PrecompileBlockProver.verifySingle()` — a
+   direct, top-level call from an EOA — reached real verification logic and
+   returned a *specific* rejection: `"Merkle proof validation failed"`. Not
+   silence. A real answer, correctly rejecting a fake proof.
+2. A hand-rolled script calling `0x0FD2` directly (same top-level shape, our
+   own ABI, no SDK involved) got the identical `"Merkle proof validation
+   failed"`. Rules out "it's an SDK-specific trick."
+3. `SpaceShieldASC.verifyOutage()` was changed from `.call()` to
+   `.staticcall()` (matching `verify`'s declared `view` mutability) and
+   redeployed. Still `"precompile call failed"` — ruling out call-vs-
+   staticcall as the variable too.
+
+**Conclusion, confirmed by elimination: the precompile only answers calls
+where it is the transaction's direct target (top-level, `tx.to ==
+0x0FD2`), not calls nested inside another contract's execution — regardless
+of `.call` vs `.staticcall`.** This is a real constraint of Creditcoin's
+implementation, not a bug in this repo's ABI or call style.
+
+**This means `SpaceShieldASC.sol`'s core design assumption didn't hold on
+real Creditcoin: a contract cannot call the Block Prover precompile
+internally.** The fix has been made, not just diagnosed. The precompile is
+now invoked directly by an off-chain caller — the Oracle Worker, using its
+own key (`oracle-worker/precompileClient.js`, mirroring what `usc-sdk`'s
+`verifyAndEmitSingle()` is shaped for on real Creditcoin: a top-level
+transaction that emits `TransactionVerified(chainKey, height,
+transactionIndex)` on success, or reverts on a bad proof). `verifyOutage()`
+was rewritten to drop the internal precompile call and the now-meaningless
+`MerkleProof`/`ContinuityProof` parameters entirely; it takes
+`(satelliteId, blockHeight, encodedTx, precompileTxHash)` and trusts the
+oracle's report that verification succeeded off-chain — backed by
+`precompileTxHash` being a real, independently-checkable transaction hash,
+not re-verified proof math inside the same call. The existing M-of-N
+oracle attestation threshold carries more of the trust load under this
+model (multiple independent oracles each doing their own top-level
+precompile call and reporting success), which is a smaller adjustment
+than it might sound like — the trust model already assumed oracles could
+lie about *whether* to submit; it just also assumed the contract could
+independently catch a lie. It still can, just one hop removed: by
+requiring several oracles to independently make an identical report
+rather than checking their proof math directly. All 16 tests pass against
+this corrected flow (see `test/spaceshield.test.js`'s `attestOutage()`
+helper, which mirrors the Oracle Worker's exact two-step call pattern),
+and `frontend/src/lib/demoTrigger.js`'s local "Trigger Outage" button runs
+the identical two-step flow from the browser.
+
+Reproducible commands (both against `0x0FD2`, `chainKey=1`, a fabricated
+proof — expected to reject, the point is *how* it fails):
+```bash
+node scripts/check-precompile.js --network creditcoinTestnet   # via usc-sdk, top-level: rejects with a real reason
+# vs. calling SpaceShieldASC.verifyOutage() (nested): fails at the call boundary, never reaches verification
+```
 
 ## 5. Compensation model: pro-rata, and why
 

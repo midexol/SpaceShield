@@ -12,19 +12,20 @@
  *
  * 2. scripts/deploy.js installs MockBlockProver at the precompile address
  *    (0x0...0FD2) via `hardhat_setCode`, a Hardhat-network-only debug RPC
- *    method that does not exist on real nodes. There is no way to
- *    substitute anything at that address here — SpaceShieldASC.sol calls
- *    BLOCK_PROVER_PRECOMPILE unconditionally (see its source), so
- *    verifyOutage() on this network calls whatever is REALLY at 0x0FD2 on
- *    Creditcoin's chain. That is the actual point of deploying here: it's
- *    a real test of whether Creditcoin's Attestcoin precompile exists and
- *    matches the expected `verify(uint64,uint64,bytes,bytes,bytes)
- *    returns (bool)` signature. This repo cannot confirm that from a
- *    read-only scan — if the precompile isn't there or the signature
- *    doesn't match, verifyOutage() will revert cleanly (abi.decode on
- *    empty returndata reverts — it will NOT silently succeed), and that
- *    failure is itself the real answer to an open question, not a bug to
- *    "fix" by guessing.
+ *    method that does not exist on real nodes. There is nothing to
+ *    substitute here — but that's no longer a gap for THIS script the way
+ *    it once was. SpaceShieldASC.verifyOutage() does not call the
+ *    precompile at all anymore (see that contract's docstring): testing
+ *    against real Creditcoin CC3-testnet proved the precompile only
+ *    answers a transaction where it's the direct, top-level target, never
+ *    a call nested inside another contract's execution — so verification
+ *    now happens off-chain, by the Oracle Worker, as its own top-level
+ *    transaction (oracle-worker/precompileClient.js), and verifyOutage()
+ *    just records that transaction's hash. This script deploys the
+ *    contracts; running the real pipeline against them additionally needs
+ *    the Oracle Worker pointed at this deployment (see README's "Run it
+ *    live" section) or `scripts/check-precompile.js --network
+ *    creditcoinTestnet` to exercise the precompile directly.
  *
  * Required env var:
  *   CC3_TESTNET_PRIVATE_KEY   funded deployer key (see README's
@@ -114,8 +115,10 @@ async function main() {
   console.log("Registered oracle", oracleAddress, "(attestation threshold defaults to 1)");
 
   console.log(
-    "\nNOT deploying a mock at 0x0FD2 — verifyOutage() will call whatever is really there on this " +
-      "chain. Test it directly (see PIPELINE README section) before assuming it works."
+    "\nNOT deploying a mock at 0x0FD2 — verifyOutage() no longer calls that address at all. " +
+      "The Oracle Worker verifies against it directly, top-level, as its own transaction " +
+      "(see oracle-worker/precompileClient.js). Test the precompile itself with " +
+      "`node scripts/check-precompile.js --network creditcoinTestnet` before assuming it works."
   );
 
   const deployment = {

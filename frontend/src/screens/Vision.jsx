@@ -26,12 +26,12 @@ const STAGES = [
     icon: "lock",
     title: "Verify",
     subtitle: "Attestcoin precompile",
-    status: "needs",
-    statusLabel: "Needs Creditcoin",
+    status: "live",
+    statusLabel: "Live today",
     today:
-      "The interface is real, not guessed — pulled directly from the usc-sdk package's own shipped ABI. But a real call against Creditcoin's live CC3-testnet, made from this app's own deployed contracts, reverted: nothing at the precompile address currently answers to it.",
+      "The interface is real, not guessed — pulled directly from the usc-sdk package's own shipped ABI. Confirmed live on Creditcoin's real CC3-testnet: called directly, top-level, it returns a real, meaningful rejection of a fake proof (\"Merkle proof validation failed\") — proof the precompile itself genuinely works. What doesn't work is calling it FROM inside another contract: it only answers when it's a transaction's own direct target, never a call nested inside SpaceShieldASC's execution — tested both as `.call` and `.staticcall`, same result either way. So verification now happens off-chain, by each Oracle Worker, as its own top-level transaction against the real precompile; SpaceShieldASC records that transaction's hash as a public audit trail rather than re-checking the proof math itself.",
     vision:
-      "A real Merkle inclusion proof plus a continuity proof, checked natively in a single atomic call — no bridge, no separate attestation service, no trusting the Oracle Worker's word for it. The contract code doesn't need to change; it already speaks the confirmed real interface. It just needs the precompile to actually be there.",
+      "This is close to the honest end-state already: a single atomic on-chain check nested inside settlement logic isn't possible given how the real precompile is gated, so decentralized oracle attestation (M-of-N, already built and tested) carries the trust weight instead — backed by a publicly verifiable off-chain transaction hash anyone can independently check against the real precompile.",
   },
   {
     num: "3",
@@ -61,7 +61,7 @@ const STAGES = [
 export default function Vision() {
   useDocumentMeta(
     "The Full Vision",
-    "What SpaceShield looks like fully realized, stage by stage — honestly compared against what's real today, including two things that were tested against Creditcoin's real testnet and don't work yet."
+    "What SpaceShield looks like fully realized, stage by stage — honestly compared against what's real today, including a real-testnet finding that changed how on-chain verification works."
   );
 
   return (
@@ -70,16 +70,18 @@ export default function Vision() {
         <h1>The full vision</h1>
         <p className="lede">
           Everything below already exists as real, tested code. This page shows what changes once
-          Spacecoin and Creditcoin's teams confirm the two pieces this project can't resolve alone —
-          stage by stage, honestly, not smoothed over for a demo.
+          Spacecoin's team confirms the one piece this project can't resolve alone — stage by stage,
+          honestly, not smoothed over for a demo.
         </p>
       </div>
 
       <div className="callout info" style={{ marginBottom: 22 }}>
         <strong>Why this page exists.</strong> Two of the four stages below were actually tested
-        against Creditcoin's real CC3-testnet, not just reasoned about — and one of them doesn't work
-        yet. Rather than hide that behind a polished simulation, this page says exactly where the line
-        between "real" and "pending" currently sits.
+        against Creditcoin's real CC3-testnet, not just reasoned about. One of them (Verify) produced a
+        real finding that changed the architecture — the precompile IS live, but only answers top-level
+        calls, not ones nested inside a contract — and the code below now reflects that correction, not
+        a guess. Rather than hide that behind a polished simulation, this page says exactly where the
+        line between "real" and "pending" currently sits.
       </div>
 
       <div className="stack" style={{ gap: 18 }}>
@@ -116,9 +118,9 @@ export default function Vision() {
       </div>
 
       <div className="callout mono" style={{ marginTop: 22 }}>
-        Full evidence trail — including the exact revert from the real testnet call — is in{" "}
-        <code>architecture.md</code> §4 and §4a, and the concrete next steps are in README's "What you
-        need to do."
+        Full evidence trail — including the elimination test that found the precompile's top-level-only
+        behavior — is in <code>architecture.md</code> §4 and §4a, and the concrete next steps are in
+        README's "What you need to do."
       </div>
     </div>
   );

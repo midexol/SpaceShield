@@ -2,10 +2,15 @@
 // the local Hardhat chain (31337). It uses deployment.json's throwaway oracle key
 // to act as the Oracle Worker: report OFFLINE telemetry until the confirmation
 // floor is met, build the exact (encodedTx, merkleProof, continuityProof) triple
-// oracle-worker/proofBuilder.js builds, then call verifyOutage() — which runs the
-// Block Prover precompile check and, at threshold, registers a claimable
-// settlement on Creditcoin. Every stage below is a real transaction/receipt, not
-// a timer. On any other chain this module refuses to run.
+// oracle-worker/proofBuilder.js builds, verify it against the Block Prover
+// precompile itself as its OWN top-level transaction (mirrors
+// oracle-worker/precompileClient.js — proven by testing against real Creditcoin
+// CC3-testnet that SpaceShieldASC can no longer do this internally, see its
+// contract docstring and architecture.md §4a), then call the simplified
+// verifyOutage() with that precompile transaction's hash, which — at
+// threshold — registers a claimable settlement on Creditcoin. Every stage below
+// is a real transaction/receipt, not a timer. On any other chain this module
+// refuses to run.
 import {
   createPublicClient,
   createWalletClient,
@@ -26,6 +31,10 @@ import { LOCAL_CHAIN_ID } from "../config/networks";
 export const CONFIRMATIONS_TARGET = 6;
 const SPACECOIN_CHAIN_KEY = 1n; // ignored by MockBlockProver; a real chain id in prod
 const OUTAGE_LOCATION = "LEO 540km · plane B";
+// Real Attestcoin Block Prover precompile address on Creditcoin. Locally,
+// MockBlockProver is installed here via hardhat_setCode (see scripts/deploy.js)
+// and MUST be called top-level, exactly like this — see the module docstring.
+const PRECOMPILE_ADDRESS = "0x0000000000000000000000000000000000000FD2";
 
 // The four stages the modal renders (mirrors the landing simulator's shape).
 export const TRIGGER_STAGES = [
@@ -154,48 +163,61 @@ export async function runTriggerOutage({ network, chainId, onStage = () => {} })
     outageId: predictedOutageId,
   });
 
-  // ── Stage 2 — Block Prover verification (real verifyOutage → precompile) ──
-  active(2, { note: "Submitting proof to Block Prover precompile 0x…0FD2" });
+  // ── Stage 2 — Block Prover verification, TOP-LEVEL against the precompile ──
+  // Proven by testing against real Creditcoin CC3-testnet: the precompile only
+  // answers a call where it is the transaction's direct target, never one
+  // nested inside SpaceShieldASC (see that contract's docstring). So this
+  // stage calls the precompile itself, as its own transaction, exactly the
+  // way oracle-worker/precompileClient.js does it server-side.
+  active(2, { note: "Checking proof against Block Prover precompile 0x…0FD2" });
+  const okNow = await publicClient.readContract({
+    address: PRECOMPILE_ADDRESS,
+    abi: ABIS.prover,
+    functionName: "verify",
+    args: [SPACECOIN_CHAIN_KEY, blockHeight, encodedTx, merkleProof, continuityProof],
+  });
+  if (!okNow) throw new Error("Block Prover precompile rejected the proof.");
+  active(2, { note: "Precompile accepted — submitting on-chain for a verifiable tx hash…" });
+  const precompileHash = await walletClient.writeContract({
+    address: PRECOMPILE_ADDRESS,
+    abi: ABIS.prover,
+    functionName: "verifyAndEmit",
+    args: [SPACECOIN_CHAIN_KEY, blockHeight, encodedTx, merkleProof, continuityProof],
+  });
+  const precompileReceipt = await publicClient.waitForTransactionReceipt({ hash: precompileHash });
+  if (precompileReceipt.status !== "success") throw new Error("Block Prover verifyAndEmit transaction reverted.");
+  done(2, {
+    note: "Proof accepted by the precompile itself, on-chain",
+    txHash: precompileHash,
+  });
+
+  // ── Stage 3 — report to SpaceShieldASC → registers claimable settlement ──
+  active(3, { note: "Reporting verified proof to SpaceShieldASC…" });
   const verifyHash = await walletClient.writeContract({
     address: ascAddr,
     abi: ABIS.asc,
     functionName: "verifyOutage",
-    args: [satelliteId, SPACECOIN_CHAIN_KEY, blockHeight, encodedTx, merkleProof, continuityProof],
+    args: [satelliteId, blockHeight, encodedTx, precompileHash],
   });
   const receipt = await publicClient.waitForTransactionReceipt({ hash: verifyHash });
   if (receipt.status !== "success") throw new Error("verifyOutage transaction reverted.");
-  const verifiedLogs = parseEventLogs({
-    abi: ABIS.asc,
-    eventName: "OutageVerified",
-    logs: receipt.logs,
-  });
-  const outageId = verifiedLogs[0]?.args?.outageId || predictedOutageId;
-  done(2, {
-    note: "Proof accepted · outage finalized on-chain",
-    txHash: verifyHash,
-    outageId,
-  });
-
-  // ── Stage 3 — Creditcoin settlement registered (same tx, settlement side) ──
-  active(3, { note: "Registering claimable settlement on Creditcoin…" });
-  const registeredLogs = parseEventLogs({
-    abi: ABIS.settlement,
-    eventName: "OutageRegistered",
-    logs: receipt.logs,
-  });
+  const verifiedLogs = parseEventLogs({ abi: ABIS.asc, eventName: "OutageVerified", logs: receipt.logs });
+  const registeredLogs = parseEventLogs({ abi: ABIS.settlement, eventName: "OutageRegistered", logs: receipt.logs });
   const reg = registeredLogs[0]?.args;
+  const outageId = verifiedLogs[0]?.args?.outageId || reg?.outageId || predictedOutageId;
   done(3, {
     note: "Settlement registered — subscribers can now claim",
     txHash: verifyHash,
-    outageId: reg?.outageId || outageId,
+    outageId,
     operator: reg?.operator || null,
     windowStart: reg?.windowStart ? reg.windowStart.toString() : null,
   });
 
   return {
-    outageId: reg?.outageId || outageId,
+    outageId,
     blockHeight: blockHeight.toString(),
     txHash: verifyHash,
+    precompileTxHash: precompileHash,
     operator: reg?.operator || null,
     confirmations: Number(confirmations),
   };

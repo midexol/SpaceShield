@@ -39,36 +39,65 @@ interface INativeQueryVerifier {
 }
 
 /// @title SpaceShieldASC (Attestcoin Smart Contract)
-/// @notice Verifies a Spacecoin outage event's inclusion + continuity proof
-///         via the Block Prover precompile, then registers a claimable
-///         settlement once enough independent oracles agree.
+/// @notice Registers a claimable settlement once enough independent oracles
+///         agree an outage's Attestcoin proof was verified.
 ///
-///         Oracle decentralization: earlier versions let any single Oracle
-///         Worker key finalize a settlement off one proof submission - one
-///         compromised or malicious key could trigger payouts (for a real
-///         outage, since the precompile still has to accept the proof, but
-///         *when* and repeatedly could still be griefed). This version
-///         requires `attestationThreshold` distinct registered oracle
-///         addresses to each independently call verifyOutage() with a
-///         proof for the same outageId before it's registered for
-///         settlement - no single oracle operator can finalize alone once
-///         the threshold is above 1.
+///         CORRECTION (tested against real Creditcoin CC3-testnet, not
+///         guessed): earlier versions of this contract called the Block
+///         Prover precompile (0x0FD2) DIRECTLY from inside verifyOutage() -
+///         a contract-to-precompile call nested inside this contract's own
+///         execution. That does not work on real Creditcoin. Proven by
+///         elimination, not assumption: usc-sdk's own official client,
+///         calling the precompile top-level (as the transaction's direct
+///         target), reached real verification logic and got a specific,
+///         correct rejection of a fake proof ("Merkle proof validation
+///         failed"). The identical call nested inside this contract -
+///         tried both as `.call` and `.staticcall`, matching the ABI's
+///         declared `view` mutability - failed at the call boundary every
+///         time, never reaching verification logic at all. The precompile
+///         only answers calls where it is the transaction's direct target.
+///         A contract cannot call it internally. Full elimination trail:
+///         architecture.md §4a; reproduce with `scripts/check-precompile.js`.
 ///
-///         Note on scope: this contract still verifies the OUTAGE ITSELF
-///         via the Attestcoin precompile - that's a genuinely separate
-///         question from subscriber verification, which lives in
-///         CoverageVault (see SettlementContract.sol's docstring). An
-///         outage is a physical/telemetry fact that still needs some form
-///         of external attestation onto the chain regardless of whether
-///         Spacecoin's payment layer is same-chain or cross-chain; that
-///         part of the design is unchanged and still an open question
-///         worth revisiting once Spacecoin's actual outage-reporting
-///         mechanism (not just its payment mechanism) is confirmed.
+///         WHAT CHANGED: verification of the Attestcoin proof itself now
+///         happens OFF-CHAIN, by each oracle, as its own top-level
+///         transaction against the real precompile (usc-sdk's
+///         `verifyAndEmit`, which emits `TransactionVerified` on success -
+///         see oracle-worker/worker.js). Oracles then report that result
+///         here. This contract can no longer re-verify the proof math
+///         itself - that's a real, honest reduction in what's checked
+///         on-chain, not a cosmetic rename. `precompileTxHash` is recorded
+///         per attestation (see OracleAttested) purely as an audit trail:
+///         anyone can independently confirm off-chain that the named
+///         transaction really did call 0x0FD2 and really did succeed. It
+///         is NOT cryptographically checked by this contract - Solidity
+///         has no way to inspect an arbitrary prior transaction's receipt.
+///
+///         Oracle decentralization carries more of the trust load under
+///         this model, which is why it already existed rather than being
+///         added in response: `attestationThreshold` distinct registered
+///         oracle addresses must each independently report the same
+///         outageId before settlement registers - no single oracle can
+///         finalize alone once the threshold is above 1. A dishonest
+///         oracle can now claim a precompile call succeeded without this
+///         contract catching the lie directly; independent multi-oracle
+///         agreement plus the public audit trail (verify precompileTxHash
+///         yourself) is the mitigation, not on-chain re-verification.
+///
+///         Note on scope: an outage is still a physical/telemetry fact
+///         that needs external attestation onto the chain regardless of
+///         whether Spacecoin's payment layer is same-chain or cross-chain;
+///         that part of the design is unchanged and still an open
+///         question - see architecture.md §3.
 contract SpaceShieldASC {
-    /// Native Block Prover precompile address on Creditcoin.
-    /// Locally, MockBlockProver is deployed at this exact address via
-    /// hardhat_setCode so this address never has to change between test
-    /// and production — see test/spaceshield.test.js.
+
+    /// @dev Reference only - the real Block Prover precompile address on
+    ///      Creditcoin. This contract does NOT call it (see docstring
+    ///      above for why that doesn't work); it's kept here as a public,
+    ///      on-chain-readable pointer so oracle-worker/worker.js and
+    ///      anyone auditing this contract can confirm which address the
+    ///      off-chain `precompileTxHash` values are supposed to target,
+    ///      without having to trust a hardcoded address in JS alone.
     address public constant BLOCK_PROVER_PRECOMPILE = 0x0000000000000000000000000000000000000FD2;
 
     ISettlementContract public immutable settlement;
@@ -87,7 +116,12 @@ contract SpaceShieldASC {
 
     event OutageVerified(bytes32 indexed outageId, string satelliteId, uint64 blockHeight);
     event OperatorRegistered(string satelliteId, address operator);
-    event OracleAttested(bytes32 indexed outageId, address indexed oracle, uint256 attestationCount);
+    event OracleAttested(
+        bytes32 indexed outageId,
+        address indexed oracle,
+        uint256 attestationCount,
+        bytes32 precompileTxHash
+    );
     event OracleRegistered(address indexed oracle);
     event OracleRemoved(address indexed oracle);
     event AttestationThresholdChanged(uint256 previous, uint256 current);
@@ -139,28 +173,27 @@ contract SpaceShieldASC {
         return oracles.length;
     }
 
-    /// @notice Called by a registered Oracle Worker once it has a proof in
-    ///         hand. chainKey/blockHeight/encodedTx/merkleProof/
-    ///         continuityProof match INativeQueryVerifier.verify's real,
-    ///         confirmed signature (see the interface docstring above).
+    /// @notice Called by a registered Oracle Worker AFTER it has already
+    ///         independently verified the outage against the real
+    ///         Attestcoin precompile itself, off-chain, as its own
+    ///         top-level transaction (see the contract-level docstring for
+    ///         why that call can't happen from inside this function
+    ///         anymore). `precompileTxHash` is that transaction's hash -
+    ///         recorded for public auditability, not checked cryptographically
+    ///         by this contract.
     ///
-    ///         Each call is independently proof-checked against the
-    ///         precompile (cheap: it's a native call, not re-verification
-    ///         of prior submissions). Once `attestationThreshold` distinct
-    ///         oracles have each successfully verified the same outage, the
-    ///         settlement is registered as claimable exactly once.
-    ///
-    ///         Returns true iff THIS call was the one that crossed the
-    ///         threshold and finalized the settlement.
+    ///         Once `attestationThreshold` distinct oracles have each
+    ///         independently reported the same outageId, the settlement is
+    ///         registered as claimable exactly once. Returns true iff THIS
+    ///         call was the one that crossed the threshold.
     function verifyOutage(
         string calldata satelliteId,
-        uint64 chainKey,
         uint64 blockHeight,
         bytes calldata encodedTx,
-        INativeQueryVerifier.MerkleProof calldata merkleProof,
-        INativeQueryVerifier.ContinuityProof calldata continuityProof
+        bytes32 precompileTxHash
     ) external returns (bool finalizedNow) {
         require(isOracle[msg.sender], "caller is not a registered oracle");
+        require(precompileTxHash != bytes32(0), "no precompile verification tx hash provided");
 
         bytes32 satKey = keccak256(bytes(satelliteId));
         address operator = satelliteOperator[satKey];
@@ -169,27 +202,10 @@ contract SpaceShieldASC {
         bytes32 outageId = keccak256(abi.encodePacked(satKey, blockHeight, encodedTx));
         require(!finalized[outageId], "already settled");
 
-        // The precompile call. This is the trust-minimized step in the
-        // flow — it verifies the outage transaction was really included in
-        // a Spacecoin block, and that the block itself is part of a
-        // continuous, unforked chain, without SpaceShield's own contracts
-        // ever reading Spacecoin state directly. Each attesting oracle
-        // performs this check independently. abi.encodeCall (not a manual
-        // signature string) so the compiler checks the argument types
-        // against INativeQueryVerifier.verify's real signature for us.
-        (bool ok, bytes memory result) = BLOCK_PROVER_PRECOMPILE.call(
-            abi.encodeCall(
-                INativeQueryVerifier.verify,
-                (chainKey, blockHeight, encodedTx, merkleProof, continuityProof)
-            )
-        );
-        require(ok, "precompile call failed");
-        require(abi.decode(result, (bool)), "proof rejected");
-
         if (!hasAttested[outageId][msg.sender]) {
             hasAttested[outageId][msg.sender] = true;
             attestationCount[outageId] += 1;
-            emit OracleAttested(outageId, msg.sender, attestationCount[outageId]);
+            emit OracleAttested(outageId, msg.sender, attestationCount[outageId], precompileTxHash);
         }
 
         if (attestationCount[outageId] < attestationThreshold) {

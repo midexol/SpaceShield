@@ -114,17 +114,41 @@ If either of those doesn't pass cleanly, something broke between sessions
   coverage contract. Its mechanics were always real; only its *name and
   docstring* were wrong (claimed to model a Spacecoin contract it didn't
   actually match — see `architecture.md` §4).
-- **The Attestcoin precompile interface** in `SpaceShieldASC.sol` — the
-  real `INativeQueryVerifier.verify` struct-based ABI, confirmed from the
-  `usc-sdk` package, not a guess. See `architecture.md` §4a; this touched
-  `MockBlockProver.sol`, both proof builders (oracle-worker and frontend
-  `demoTrigger.js`), and test fixtures too — they all had to move together.
-- **Creditcoin CC3-testnet deployment infrastructure**
+- **The Attestcoin precompile interface AND call architecture.** The
+  struct-based ABI (`INativeQueryVerifier.verify`) is confirmed from the
+  `usc-sdk` package, not a guess. On top of that, a SECOND correction:
+  testing `verifyOutage()` for real against Creditcoin CC3-testnet proved
+  the precompile only answers a transaction where it's the direct,
+  top-level target — never a call nested inside another contract, `.call`
+  or `.staticcall`, tested both ways (full elimination trail in
+  `architecture.md` §4a). So `SpaceShieldASC.verifyOutage()` no longer
+  calls the precompile at all; it takes `(satelliteId, blockHeight,
+  encodedTx, precompileTxHash)` and trusts that the calling oracle already
+  verified the proof itself, off-chain, as its own top-level transaction —
+  `oracle-worker/precompileClient.js` is the shared client that does that
+  (mirrored by `frontend/src/lib/demoTrigger.js` for the browser-driven
+  local demo, and by `test/spaceshield.test.js`'s `attestOutage()` helper).
+  `MockBlockProver.sol` grew a `verifyAndEmit()` function to mirror the
+  real precompile's two-call shape (`verify` = free check, `verifyAndEmit`
+  = real mined tx, reverts on a bad proof). All 16 tests pass against this
+  flow. Don't reintroduce an internal precompile call inside
+  `SpaceShieldASC` — it's not a style choice, it doesn't work on real
+  Creditcoin.
+- **Creditcoin CC3-testnet deployment — done, not just ready.**
   (`hardhat.config.js`'s `creditcoinTestnet` network, chain ID 102031,
-  confirmed real and live; `scripts/deploy-testnet.js`) — the
-  infrastructure is real and ready; it has NOT actually been run, because
-  that needs a funded private key nobody but the project owner can
-  provide. Don't mark this "done" — it's "ready," which is different.
+  confirmed real and live; `scripts/deploy-testnet.js`.) Deployed for real
+  twice: 2026-09-01 (the original guessed-then-corrected-ABI version), and
+  again 2026-09-03 after the precompile-call-architecture fix above —
+  the 2026-09-01 addresses are superseded. Current addresses are in
+  `deployment.testnet.json` and README's "Live testnet deployment". Single
+  deployer key holds operator/oracle/treasury roles (a solo trial
+  deployment, not multi-party — see the script's header). Note:
+  `hardhat.config.js` didn't load `.env` for `npx hardhat run` until this
+  redeploy — it only had `process.env.CC3_TESTNET_PRIVATE_KEY` with
+  nothing populating it outside a script that itself called
+  `dotenv.config()`. Fixed by adding `require("dotenv").config()` to
+  `hardhat.config.js` and `dotenv` as an explicit devDependency; don't
+  remove either.
 
 **Deliberately mocked, with a documented real-world grounding:**
 - `MockSpacecoinSource.sol` — satellite status/telemetry. Whether this
@@ -135,12 +159,14 @@ If either of those doesn't pass cleanly, something broke between sessions
   reachable" — real network access doesn't answer this one.
 - `MockBlockProver.sol` — stand-in for Creditcoin's native precompile at
   `0x0FD2`, installed at that exact address locally via `hardhat_setCode`.
-  Now speaks the confirmed-real ABI, but whether the real precompile is
-  actually live at that address on CC3-testnet with this interface is
-  still unverified — `eth_getCode` there returns empty, which is
-  *consistent* with a genuine precompile (they're native VM logic, not
-  deployed bytecode) but doesn't prove it. Only a real `verifyOutage()`
-  call against testnet would confirm it either way.
+  Speaks the confirmed-real ABI AND is now confirmed to model the real
+  precompile's call shape correctly: the real precompile at `0x0FD2` on
+  CC3-testnet IS live (proven — a real, meaningful proof rejection came
+  back from a top-level call, see `architecture.md` §4a), it just only
+  answers top-level calls, which is exactly how this mock is called too
+  (see the bullet above). What's still a mock, deliberately: the
+  verification LOGIC inside it (a toy hash-commitment check, not a real
+  Merkle walk) — only the call shape and interface are real.
 - `oracle-worker/proofBuilder.js` — the proof *shape* is now real
   (struct-based, matching the confirmed interface); the proof *content* is
   still fabricated, because there's no real Spacecoin transaction yet to
