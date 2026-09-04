@@ -1,10 +1,14 @@
 // The Trigger Outage modal. Opening it immediately runs the real pipeline
-// (lib/demoTrigger) against the local Hardhat node and animates each stage from
-// the actual tx/receipt progress — no fake timers. Closing is disabled while a
-// run is in flight. On success it calls onComplete(result) so the Network page
-// can refetch its live reads.
+// (lib/demoTrigger) — locally with the deployment's throwaway key, or on
+// Creditcoin testnet with the connected wallet plus the Oracle Worker for
+// the one step that needs a registered oracle — and animates each stage
+// from the actual tx/receipt progress, no fake timers. Closing is disabled
+// while a run is in flight. On success it calls onComplete(result) so the
+// Network page can refetch its live reads.
 import { useEffect, useRef, useState } from "react";
-import { runTriggerOutage, TRIGGER_STAGES } from "../../lib/demoTrigger";
+import { useAccount, usePublicClient, useWalletClient } from "wagmi";
+import { runTriggerOutage, runTriggerOutageTestnet, TRIGGER_STAGES } from "../../lib/demoTrigger";
+import { LOCAL_CHAIN_ID } from "../../config/networks";
 import { shortHash, explorerTx } from "../../lib/format";
 
 const initStages = () => TRIGGER_STAGES.map(() => ({ status: "idle", note: "" }));
@@ -16,6 +20,10 @@ export default function PipelineModal({ open, onClose, network, chainId, onCompl
   const [error, setError] = useState(null);
   const startedRef = useRef(false);
   const activeIdxRef = useRef(0);
+  const isLocal = chainId === LOCAL_CHAIN_ID;
+  const { address } = useAccount();
+  const { data: walletClient } = useWalletClient({ chainId: isLocal ? undefined : chainId });
+  const publicClient = usePublicClient({ chainId: isLocal ? undefined : chainId });
 
   useEffect(() => {
     if (!open || startedRef.current) return;
@@ -25,14 +33,18 @@ export default function PipelineModal({ open, onClose, network, chainId, onCompl
     setError(null);
     setRunning(true);
 
-    runTriggerOutage({
-      network,
-      chainId,
-      onStage: (i, patch) => {
-        activeIdxRef.current = i;
-        setStages((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
-      },
-    })
+    const onStage = (i, patch) => {
+      activeIdxRef.current = i;
+      setStages((prev) => prev.map((s, idx) => (idx === i ? { ...s, ...patch } : s)));
+    };
+
+    const run = isLocal
+      ? runTriggerOutage({ network, chainId, onStage })
+      : (address
+          ? runTriggerOutageTestnet({ network, chainId, walletClient, publicClient, onStage })
+          : Promise.reject(new Error("Connect a wallet first.")));
+
+    run
       .then((res) => {
         setResult(res);
         setRunning(false);
@@ -77,8 +89,20 @@ export default function PipelineModal({ open, onClose, network, chainId, onCompl
         </div>
         <div className="modal-body">
           <div className="callout warn mono" style={{ marginBottom: 16 }}>
-            <strong>Local demo · chain 31337.</strong> Runs as the deployment's throwaway
-            oracle key. Every stage below is a real transaction against your Hardhat node.
+            {isLocal ? (
+              <>
+                <strong>Local demo · chain 31337.</strong> Runs as the deployment's throwaway
+                oracle key. Every stage below is a real transaction against your Hardhat node.
+              </>
+            ) : (
+              <>
+                <strong>{network?.name || "Creditcoin testnet"}.</strong> Your wallet signs every
+                step it's able to (reporting the outage, and the real Attestcoin precompile call —
+                neither needs special permission). Only the final step, which needs a registered
+                oracle, is handled by the Oracle Worker — it independently re-checks your
+                precompile transaction before attesting to it. Approve each prompt in your wallet.
+              </>
+            )}
           </div>
 
           <div className="sim-shell flush">

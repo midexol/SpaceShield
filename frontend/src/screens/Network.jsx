@@ -1,7 +1,8 @@
 // Network — the public, no-wallet transparency page: live satellite telemetry,
 // per-operator bond health (the browser port of monitor_bonds.js), protocol
 // totals, and a recent-activity feed. It also hosts the Trigger Outage button,
-// which runs the REAL pipeline against the local chain (31337 only).
+// which runs the REAL pipeline — locally (31337), or on Creditcoin testnet
+// with your own connected wallet plus the Oracle Worker, see lib/demoTrigger.js.
 import { useState } from "react";
 import { Card, CardHead } from "../components/ui/Card";
 import { Metric } from "../components/ui/Stat";
@@ -140,13 +141,17 @@ export default function Network() {
                   Trigger outage →
                 </button>
                 <p className="hint mono">
-                  Runs the real detect → prove → verify → settle pipeline on the local chain.
+                  {net?.isLocal
+                    ? "Runs the real detect → prove → verify → settle pipeline on the local chain."
+                    : "Runs the real detect → prove → verify → settle pipeline on Creditcoin testnet, with your own wallet."}
                 </p>
               </>
             ) : (
               <div className="callout info">
-                <strong>Live trigger is local-only.</strong> On {net?.name || "this network"} the
-                outage pipeline is driven by the off-chain oracle-worker, not the browser.
+                <strong>Trigger isn't configured on {net?.name || "this network"}.</strong>{" "}
+                {net?.isLocal === false
+                  ? "The Oracle Worker's URL isn't set (VITE_ORACLE_WORKER_URL)."
+                  : "Start a local node and run scripts/deploy.js."}
               </div>
             )}
           </div>

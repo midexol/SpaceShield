@@ -56,6 +56,12 @@ const testnet = {
   },
   demoOracleKey: null,
   seedSubscriber: null,
+  // The always-on Oracle Worker backend (see oracle-worker/worker.js's
+  // POST /attest) that lets "Trigger outage" work here without a browser-
+  // held private key: your own wallet does reportStatus + the real
+  // precompile call directly; this worker (holding the actual registered
+  // oracle's key) only ever does the one step that has to be privileged.
+  oracleWorkerUrl: clean(import.meta.env.VITE_ORACLE_WORKER_URL),
 };
 
 export const NETWORKS = {

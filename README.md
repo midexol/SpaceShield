@@ -242,6 +242,43 @@ thing pointed at a different network — see its header comment for why (no
 test of whether the Attestcoin precompile is actually live at `0x0FD2` on
 that network, which this repo cannot confirm from a read-only scan).
 
+### Public testnet demo (Oracle Worker)
+
+On testnet, `SpaceShieldASC.verifyOutage()` requires a *registered oracle*
+— a visitor's own wallet never is one, and never should be (that's the
+whole point of oracle attestation). So "Trigger outage" on the public site
+needs one small, always-on backend running somewhere persistent, holding
+the real oracle key server-side — never in the browser. Everything else a
+visitor does (reporting the outage, calling the real Attestcoin precompile,
+claiming a payout) is their own wallet signing a real transaction; see
+`frontend/src/lib/demoTrigger.js`'s `runTriggerOutageTestnet()` and
+`oracle-worker/worker.js`'s `POST /attest` for the exact split and why the
+worker independently re-checks the precompile transaction before attesting
+to it rather than trusting the browser's word for it.
+
+To stand this up (e.g. on [Render](https://render.com), free tier, as a
+Web Service):
+
+1. Connect your GitHub repo, set the start command to `npm start` (already
+   wired to `node oracle-worker/worker.js`) and leave the build command as
+   `npm install`.
+2. Set these environment variables in Render's dashboard — **never** paste
+   `ORACLE_PRIVATE_KEY` anywhere outside your own hosting provider's own
+   secrets UI:
+   - `SPACESHIELD_RPC_URL` = `https://rpc.cc3-testnet.creditcoin.network`
+   - `SOURCE_ADDRESS`, `ASC_ADDRESS` = from `deployment.testnet.json`
+   - `ORACLE_PRIVATE_KEY` = the same key already funded and used for
+     `deploy-testnet.js` (it registered that address as the oracle) — copy
+     it from your own `.env`'s `CC3_TESTNET_PRIVATE_KEY`
+   - `CORS_ORIGIN` = your deployed frontend's origin (or leave unset for `*`
+     during setup)
+3. Once it's live, set `VITE_ORACLE_WORKER_URL` in `frontend/.env` (and on
+   Vercel) to the Render service's URL, redeploy the frontend. "Trigger
+   outage" now shows up on the public site.
+
+Render's free tier sleeps after inactivity (~50s cold start on the first
+request after a while) — fine for a demo, not for uptime-sensitive use.
+
 ### Live testnet deployment
 
 Deployed for real on Creditcoin CC3-testnet, 2026-09-03 (see
@@ -314,6 +351,10 @@ for how this list connects to the design decisions above:
   real; the proof *content* is still fabricated because there's no real
   Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
 - Oracle Worker persistence/retry queue beyond contract-level idempotency.
+- The Oracle Worker's `/attest` endpoint exists and is tested, but isn't
+  hosted anywhere persistent yet — see "What you need to do" below. Until
+  it is, "Trigger outage" on the public testnet site has nothing to call
+  and won't show as available.
 - Multi-satellite support is architecturally ready (everything's keyed by
   `satelliteId`) but never load-tested with more than one.
 - No chain-reorg invalidation path.
@@ -342,16 +383,22 @@ Spacecoin's team — none of it is something more code from here can resolve:
    been built into the code**: `SpaceShieldASC.verifyOutage()` no longer
    calls the precompile itself; the Oracle Worker does, directly, as its
    own transaction. No further action needed on this item.
-2. **Decide CoverageVault's relationship to Spacecoin's real
+2. **Deploy the Oracle Worker somewhere persistent (e.g. Render) so
+   "Trigger outage" works on the public site, not just localhost** — see
+   "Public testnet demo (Oracle Worker)" above for exact steps. Needs your
+   own Render account and pasting your already-funded
+   `CC3_TESTNET_PRIVATE_KEY` into Render's own secrets UI (never anywhere
+   else) — that's the one step here only you can do.
+3. **Decide CoverageVault's relationship to Spacecoin's real
    `TokenPaymentEscrow`** — stay fully independent (current state, and
    arguably the more honest default), or additionally require some signal
    from the real contract (e.g. a minimum recent claimed-data balance) as
    a secondary eligibility check. This is a product call about what
    "actively a Spacecoin customer" should mean, not something to guess at.
-3. **Get a WalletConnect Cloud project ID** (free, at
+4. **Get a WalletConnect Cloud project ID** (free, at
    cloud.walletconnect.com) if you want the QR-code wallet-connect flow in
    the app — injected wallets like MetaMask already work without it.
-4. **Get a reply from Spacecoin's team.** Their own docs already answer
+5. **Get a reply from Spacecoin's team.** Their own docs already answer
    most of this — no satellite telemetry is published on-chain today, only
    transaction hashes and payment proofs (`architecture.md` §3) — but
    that's an inference from documentation, not their team confirming it or
@@ -360,7 +407,7 @@ Spacecoin's team — none of it is something more code from here can resolve:
    proof from (item below) — post it in Spacecoin's Discord
    (`discord.gg/spacecoin`, verified live, 1,761 members) or Telegram
    (`t.me/Spacecoin_org`) and follow up there.
-5. **Commission a security audit and legal/regulatory review** before any
+6. **Commission a security audit and legal/regulatory review** before any
    of this touches real funds — both are genuinely out of scope for an
    engineering pass, regardless of environment.
 
