@@ -63,7 +63,7 @@ export const NETWORKS = {
   [testnet.chainId]: testnet,
 };
 
-export const DEFAULT_CHAIN_ID = local.chainId;
+export const DEFAULT_CHAIN_ID = testnet.chainId;
 
 export function getNetwork(chainId) {
   return NETWORKS[chainId] || null;
