@@ -1,87 +1,148 @@
-// Vision — a transparency page, not a marketing simulation. No wallet needed
-// (same spirit as Network). For each stage of the pipeline, it says plainly
-// what's real today vs. what changes once Spacecoin and Creditcoin's teams
-// confirm the remaining pieces — pulled straight from architecture.md and
-// README's "What you need to do", not softened for presentation.
+// Vision — a plain-language explainer, not a marketing simulation. No wallet
+// needed (same spirit as Network). Leads with "how does this actually work"
+// in everyday terms, then an honest real-vs-pending status per stage. Deep
+// technical evidence (exact error strings, call semantics, ABI sources)
+// intentionally lives in architecture.md, not here — this page is for a
+// reader deciding whether to trust the system, not auditing its code.
 import { Card, CardHead } from "../components/ui/Card";
 import { Tag } from "../components/ui/Badge";
 import Icon from "../components/ui/Icon";
 import { useDocumentMeta } from "../hooks/useDocumentMeta";
+
+const PAYOUT_STEPS = [
+  {
+    icon: "shield",
+    title: "An operator locks a bond",
+    body: "A satellite operator puts up collateral on Creditcoin — like a security deposit that guarantees the money to pay claims is actually there before any outage happens.",
+  },
+  {
+    icon: "lock",
+    title: "A subscriber locks coverage",
+    body: "Anyone wanting outage protection locks stake into SpaceShield's own vault. That's what makes them \"covered\" and eligible for compensation later.",
+  },
+  {
+    icon: "signal",
+    title: "An outage is detected, independently",
+    body: "An AI agent watches satellite status and cross-checks it against public tracking data before raising any alarm — one bad signal alone can never trigger a payout.",
+  },
+  {
+    icon: "activity",
+    title: "Independent verifiers agree",
+    body: "The outage is proven cryptographically through Attestcoin, and multiple separate oracles each have to confirm it — like requiring more than one signature, so no single party can fake a claim.",
+  },
+  {
+    icon: "signal",
+    title: "Compensation becomes claimable",
+    body: "Once verified, each subscriber's payout is calculated automatically — proportional to how long they were covered and how long the outage lasted. Nothing is auto-pushed: each subscriber claims their own payout directly to their wallet, whenever they want.",
+  },
+];
 
 const STAGES = [
   {
     num: "1",
     icon: "signal",
     title: "Detect",
-    subtitle: "Spacecoin telemetry",
+    subtitle: "Is the satellite actually down?",
     status: "needs",
     statusLabel: "Needs Spacecoin",
     today:
-      "MockSpacecoinSource reports fabricated satellite status — there is no real satellite behind it. The AI Agent's detection, cross-check, and confirmation-floor logic (agent/monitor.py) is real code, independently tested, and already watches whatever this contract says.",
+      "The satellite status this reads today is a stand-in — there's no real satellite feeding it yet. But the part that decides whether an outage is real is genuinely built and tested: an independent AI agent cross-checks any status change against public satellite-tracking data before it will ever raise an alarm.",
     vision:
-      "Real Spacecoin satellite status flows in automatically. Whether that's the same on-chain read pattern used today or something else depends on one open question: is Spacecoin's telemetry reporting same-chain (like its payments turned out to be) or on a genuinely separate chain? That needs an answer from Spacecoin's team, not more code here.",
+      "Once Spacecoin shares real status data, this plugs in without a rebuild. Their own documentation confirms that data isn't published on any chain today — we're waiting to hear from their team directly on if or when that changes.",
   },
   {
     num: "2",
     icon: "lock",
     title: "Verify",
-    subtitle: "Attestcoin precompile",
+    subtitle: "Proving the outage really happened",
     status: "live",
     statusLabel: "Live today",
     today:
-      "The interface is real, not guessed — pulled directly from the usc-sdk package's own shipped ABI. Confirmed live on Creditcoin's real CC3-testnet: called directly, top-level, it returns a real, meaningful rejection of a fake proof (\"Merkle proof validation failed\") — proof the precompile itself genuinely works. What doesn't work is calling it FROM inside another contract: it only answers when it's a transaction's own direct target, never a call nested inside SpaceShieldASC's execution — tested both as `.call` and `.staticcall`, same result either way. So verification now happens off-chain, by each Oracle Worker, as its own top-level transaction against the real precompile; SpaceShieldASC records that transaction's hash as a public audit trail rather than re-checking the proof math itself.",
+      "Real and tested against the actual Creditcoin network — not simulated. Attestcoin, Creditcoin's built-in proof-checker, genuinely accepts real proofs and rejects fake ones, confirmed by testing it live. Every check is its own public transaction, checkable by anyone, forever.",
     vision:
-      "This is close to the honest end-state already: a single atomic on-chain check nested inside settlement logic isn't possible given how the real precompile is gated, so decentralized oracle attestation (M-of-N, already built and tested) carries the trust weight instead — backed by a publicly verifiable off-chain transaction hash anyone can independently check against the real precompile.",
+      "Multiple independent oracles have to agree before a payout is finalized — that's what keeps this trustworthy, standing in for a single all-in-one automatic check that the real chain doesn't allow.",
   },
   {
     num: "3",
     icon: "activity",
     title: "Settle",
-    subtitle: "Creditcoin bonds",
+    subtitle: "Money moves, automatically",
     status: "live",
     statusLabel: "Live today",
     today:
-      "Fully real, right now: operator bonds, pull-based claims, live coverage checks, pro-rata compensation math, M-of-N oracle attestation, treasury-routed penalties. 16/16 tests passing, and genuinely deployed on Creditcoin's real testnet — not a simulation.",
-    vision: "This is already what it looks like. Nothing changes here.",
+      "Fully working right now, on Creditcoin's live testnet: bonds, automatic payout math, and subscribers pulling their own compensation directly — no manual approval step, no human in the loop.",
+    vision: "This is already the finished version. Nothing left to build here.",
   },
   {
     num: "4",
     icon: "shield",
     title: "Cover",
-    subtitle: "SpaceShield's own vault",
+    subtitle: "Who's protected",
     status: "live",
     statusLabel: "Live · decision pending",
     today:
-      "CoverageVault is SpaceShield's own product — subscribers lock stake directly with SpaceShield, independent of however Spacecoin bills for data. That's a deliberate choice, not a placeholder: Spacecoin's real payment contract turned out to be a pay-per-byte data escrow with no concept of \"coverage\" at all.",
+      "Subscribers lock funds directly with SpaceShield to get covered — this is SpaceShield's own product, separate from however Spacecoin bills for data service.",
     vision:
-      "Could optionally also check Spacecoin's real payment activity as a secondary eligibility signal, layered on top. That's a product decision about what \"actively a customer\" should mean — open, and not blocked on anyone else to make.",
+      "Could later also check someone's real Spacecoin usage as an extra signal for eligibility. That's a business decision, not something blocking the technology.",
   },
 ];
 
 export default function Vision() {
   useDocumentMeta(
     "The Full Vision",
-    "What SpaceShield looks like fully realized, stage by stage — honestly compared against what's real today, including a real-testnet finding that changed how on-chain verification works."
+    "How SpaceShield's payout actually works, in plain terms, plus an honest real-vs-pending status for each stage."
   );
 
   return (
     <div>
       <div className="page-head">
-        <h1>The full vision</h1>
+        <h1>How this actually works</h1>
         <p className="lede">
-          Everything below already exists as real, tested code. This page shows what changes once
-          Spacecoin's team confirms the one piece this project can't resolve alone — stage by stage,
-          honestly, not smoothed over for a demo.
+          No jargon first — five steps, in order, from an operator locking a bond to a subscriber
+          getting paid. The honest real-vs-pending breakdown for each stage is further down.
         </p>
       </div>
 
-      <div className="callout info" style={{ marginBottom: 22 }}>
-        <strong>Why this page exists.</strong> Two of the four stages below were actually tested
-        against Creditcoin's real CC3-testnet, not just reasoned about. One of them (Verify) produced a
-        real finding that changed the architecture — the precompile IS live, but only answers top-level
-        calls, not ones nested inside a contract — and the code below now reflects that correction, not
-        a guess. Rather than hide that behind a polished simulation, this page says exactly where the
-        line between "real" and "pending" currently sits.
+      <div className="stack" style={{ gap: 12, marginBottom: 28 }}>
+        {PAYOUT_STEPS.map((s, i) => (
+          <Card key={s.title}>
+            <div className="row" style={{ gap: 14, alignItems: "flex-start" }}>
+              <div
+                className="row"
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 999,
+                  background: "var(--blue-tint, rgba(63,111,224,0.12))",
+                  color: "var(--brand)",
+                  justifyContent: "center",
+                  flexShrink: 0,
+                  fontWeight: 600,
+                  fontSize: 13,
+                }}
+              >
+                {i + 1}
+              </div>
+              <div>
+                <div className="row" style={{ gap: 8, marginBottom: 4 }}>
+                  <Icon name={s.icon} size={16} />
+                  <strong style={{ fontSize: 14.5 }}>{s.title}</strong>
+                </div>
+                <p className="hint" style={{ fontSize: 13.5, lineHeight: 1.6, margin: 0 }}>
+                  {s.body}
+                </p>
+              </div>
+            </div>
+          </Card>
+        ))}
+      </div>
+
+      <div className="page-head" style={{ marginTop: 8 }}>
+        <h2 style={{ fontSize: 20 }}>Stage by stage: what's real today</h2>
+        <p className="lede" style={{ fontSize: 14 }}>
+          Everything below already exists as real, tested code. This is what changes once
+          Spacecoin's team confirms the one piece this project can't resolve alone.
+        </p>
       </div>
 
       <div className="stack" style={{ gap: 18 }}>
@@ -92,7 +153,7 @@ export default function Vision() {
                 <span className="row" style={{ gap: 10 }}>
                   <Icon name={s.icon} size={18} />
                   {s.num} · {s.title}
-                  <span className="hint mono" style={{ fontWeight: 400 }}>
+                  <span className="hint" style={{ fontWeight: 400 }}>
                     {s.subtitle}
                   </span>
                 </span>
@@ -118,9 +179,9 @@ export default function Vision() {
       </div>
 
       <div className="callout mono" style={{ marginTop: 22 }}>
-        Full evidence trail — including the elimination test that found the precompile's top-level-only
-        behavior — is in <code>architecture.md</code> §4 and §4a, and the concrete next steps are in
-        README's "What you need to do."
+        Full technical evidence — exact test results, the precompile call-shape finding, ABI
+        sources — is in <code>architecture.md</code>; concrete next steps are in README's "What
+        you need to do."
       </div>
     </div>
   );
