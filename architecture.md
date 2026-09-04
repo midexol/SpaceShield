@@ -81,34 +81,49 @@ human in the loop.
    is checked live against `CoverageVault` and paid pro-rata based on how
    long they've been subscribed relative to `COMPENSATION_WINDOW` (see §5).
 
-## 3. Open question: where does satellite telemetry actually live?
+## 3. Satellite telemetry: not published on-chain today, confirmed from Spacecoin's own docs
 
-Confirmed, from official Spacecoin docs, independently verified against the
-real deployed contract on Creditcoin's own explorer (see §4): SPACE
-payments happen on Creditcoin itself — same chain as SpaceShield's own
-contracts.
+**Resolved, with real primary-source evidence — not from Spacecoin's team
+directly (that outreach is still open, see below), but from their own
+published documentation and public track record.**
 
-**Not confirmed either way:** whether satellite status/outage reporting is
-*also* same-chain, or comes from a genuinely separate telemetry system.
-Two scenarios, both currently supported by the architecture:
+`docs.spacecoin.org/network/how-it-works` describes exactly two things as
+being recorded on-chain: transaction hashes for satellite data
+transmissions, and cryptographic proof of service delivery submitted to a
+smart contract for payment release. Satellite operational status —
+up/down, health, connectivity — is not described as part of that record
+anywhere in the doc. This is corroborated by Spacecoin's own public
+announcements: the CTC-0 satellite's October 2025 milestone (the first
+end-to-end blockchain message relayed through space, validated on
+Creditcoin's testnet — widely covered, e.g.
+[Spacecoin's own writeup](https://medium.com/@_spacecoin/spacecoin-routes-first-end-to-end-blockchain-transaction-through-space-4f0fc924faee))
+is framed entirely around proving a *data relay transaction* happened, not
+around publishing the satellite's live status. Nothing found — not the
+docs, not the announcement coverage — describes a telemetry feed, oracle,
+or status contract.
 
-| If telemetry reporting is... | Then... |
-|---|---|
-| Same-chain (on Creditcoin, like payments) | The whole Attestcoin precompile layer (`SpaceShieldASC`'s call to `0x0FD2`) is unnecessary overhead — `MockSpacecoinSource`-equivalent could be listened to directly with normal same-chain event listening, no proof needed |
-| Cross-chain (a separate telemetry chain) | The precompile layer is required exactly as built — this is what it's for |
+**What this means for SpaceShield:** the architecture this repo already
+has — an off-chain AI agent (`agent/`) that independently monitors real
+public tracking data (CelesTrak) and cross-checks it, rather than trusting
+a single on-chain telemetry source — isn't a placeholder for a same-chain
+read that would make it redundant. It's addressing a real gap: Spacecoin
+doesn't currently publish the data SpaceShield would need to read
+directly, on any chain. The Attestcoin precompile layer's job was always
+narrower than "read telemetry" — it's for proving the *payment/service*
+side of an outage claim, which is confirmed on-chain (§4), while detection
+itself has to stay off-chain until/unless Spacecoin publishes telemetry
+some other way.
 
-**Decision: build for the cross-chain case (current code), because it's a
-strict superset** — a same-chain telemetry source can still go through a
-proof-verification step (it'd just always trivially succeed, or the step
-gets removed later), but a genuinely cross-chain telemetry source has no
-way to get verified without something like the precompile. Building for
-the harder case first and simplifying later is safer than the reverse.
-
-**Who can resolve this:** someone with access to Spacecoin's actual
-satellite-to-chain reporting mechanism / their team directly. Not
-resolvable by more reasoning from outside — this is still true even with
-real network access (§3a below), because it's a question about Spacecoin's
-internal architecture, not something a public API or explorer answers.
+**Still open:** whether Spacecoin has an unpublished or upcoming telemetry
+mechanism isn't something documentation can rule out — only their team can
+say that for certain. An outreach message covering both this question and
+the Attestcoin proof-builder question (§4a) is drafted, ready to post in
+Spacecoin's Discord (`discord.gg/spacecoin`, verified live and active —
+1,761 members — via Discord's own invite API) or Telegram
+(`t.me/Spacecoin_org`); no reply as of this writing, and it isn't confirmed
+whether it's been sent yet. Update this section once they actually answer
+— don't let a documentation-level inference harden into "confirmed by the
+team" without actually hearing back.
 
 ### 3a. Correction: this sandbox's network egress claim was environment-specific, not universal
 

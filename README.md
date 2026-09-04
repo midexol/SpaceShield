@@ -28,9 +28,10 @@ No human decides whether an outage happened. No human decides who gets paid.
 Three independent systems each do exactly one job, and none of them have to
 trust each other:
 
-1. **Detect** — an AI agent watches Spacecoin's on-chain telemetry and
-   cross-checks it against an independent public tracker (real NORAD/CelesTrak
-   data) before it will trigger anything.
+1. **Detect** — an AI agent watches satellite status (mocked, pending real
+   Spacecoin telemetry — see `architecture.md` §3) and cross-checks it
+   against an independent public tracker (real NORAD/CelesTrak data)
+   before it will trigger anything.
 2. **Verify** — Attestcoin's native Block Prover precompile (`0x0FD2`)
    cryptographically checks a Merkle + continuity proof of the outage. Not
    an opinion — a proof, checked directly against the real precompile by
@@ -175,7 +176,7 @@ faked.
 | Subscriber coverage (`CoverageVault.sol`) | **Real, SpaceShield's own contract** — not a model of Spacecoin's payment system (an earlier version incorrectly claimed to be; see `architecture.md` §4 for what the real Spacecoin contract turned out to be and why it can't serve this purpose) |
 | Attestcoin Block Prover interface | **Real ABI**, confirmed from the `usc-sdk` package's shipped artifacts (interface `INativeQueryVerifier`) — an earlier version guessed a flat-bytes signature that would have reverted against the real precompile on every call |
 | Attestcoin Block Prover precompile itself | **Confirmed real and live** on Creditcoin CC3-testnet (tested 2026-09-01) — but only when called top-level (as a transaction's direct target), never nested inside another contract's execution. That's a real constraint discovered by testing, not a guess, and it changed the architecture: verification now happens off-chain, by the Oracle Worker, calling the precompile directly (`oracle-worker/precompileClient.js`); `SpaceShieldASC.verifyOutage()` no longer calls it at all. Locally, `MockBlockProver.sol` (installed at the real `0x0FD2` address via `hardhat_setCode`) speaks the same real ABI and is called the same top-level way. See `architecture.md` §4a for the full elimination trail |
-| Spacecoin's satellite-status/telemetry reporting | **Mocked** — same-chain-vs-cross-chain is a genuine open question, see `architecture.md` §3 |
+| Spacecoin's satellite-status/telemetry reporting | **Mocked, and confirmed why it has to be**: Spacecoin's own docs (`docs.spacecoin.org/network/how-it-works`) describe only transaction hashes and payment proofs as on-chain — no satellite status/uptime feed exists to read from yet, on any chain. Outreach to Spacecoin's team for final confirmation is pending; see `architecture.md` §3 |
 | Proof *shape* (Merkle/continuity struct format) | **Real** — matches the confirmed real precompile interface |
 | Proof *content* | **Fabricated** — there's no real Spacecoin transaction yet to build a genuine proof from; swapping `oracle-worker/proofBuilder.js`'s body for a real `usc-sdk` `ProofBuilder` call is the remaining step, once telemetry (above) is real |
 | AI Agent detection/cross-check/confirmation-floor logic | **Real**, independently runnable (`agent/monitor.py`) |
@@ -184,7 +185,7 @@ faked.
 | Oracle decentralization | **Real M-of-N attestation** |
 | Frontend (wallet-connected dApp + public transparency pages) | **Real** — RainbowKit/wagmi, live contract reads/writes, a browser-driven trigger for the full pipeline on the local chain |
 | CI + bond-health monitoring | **Real**, runnable (`.github/workflows/test.yml`, `scripts/monitor_bonds.js`) |
-| Creditcoin CC3-testnet deployment | **Done, for real** — deployed 2026-09-01, see "Live testnet deployment" below |
+| Creditcoin CC3-testnet deployment | **Done, for real** — deployed 2026-09-01, redeployed 2026-09-03 with the corrected `SpaceShieldASC` (previous addresses superseded), see "Live testnet deployment" below |
 
 ## Quickstart
 
@@ -303,9 +304,12 @@ architecture.md      System design, trust boundaries, decision log
 The honest, current list — see [`architecture.md`](architecture.md), §7,
 for how this list connects to the design decisions above:
 
-- **Open architectural question:** is satellite telemetry reporting
-  same-chain (like payments turned out to be) or genuinely cross-chain?
-  Needs real information from Spacecoin's team, not more reasoning.
+- **Satellite telemetry isn't published on-chain anywhere today** —
+  confirmed from Spacecoin's own docs (`docs.spacecoin.org/network/how-it-works`
+  describes only transaction hashes and payment proofs as on-chain), not
+  yet confirmed directly by their team (outreach sent, no reply yet — see
+  `architecture.md` §3). Detection has to stay off-chain (as it already
+  is) until that changes.
 - **Real Attestcoin proof content** — the proof *shape* is now confirmed
   real; the proof *content* is still fabricated because there's no real
   Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
@@ -347,10 +351,15 @@ Spacecoin's team — none of it is something more code from here can resolve:
 3. **Get a WalletConnect Cloud project ID** (free, at
    cloud.walletconnect.com) if you want the QR-code wallet-connect flow in
    the app — injected wallets like MetaMask already work without it.
-4. **Talk to Spacecoin's team** about the one real open architectural
-   question left: is satellite telemetry reporting same-chain or
-   cross-chain? Everything downstream of that (whether the Attestcoin
-   precompile layer is even the right shape) depends on the answer.
+4. **Get a reply from Spacecoin's team.** Their own docs already answer
+   most of this — no satellite telemetry is published on-chain today, only
+   transaction hashes and payment proofs (`architecture.md` §3) — but
+   that's an inference from documentation, not their team confirming it or
+   saying whether it'll change. An outreach message is drafted, covering
+   this plus a request for a real transaction to build a genuine Attestcoin
+   proof from (item below) — post it in Spacecoin's Discord
+   (`discord.gg/spacecoin`, verified live, 1,761 members) or Telegram
+   (`t.me/Spacecoin_org`) and follow up there.
 5. **Commission a security audit and legal/regulatory review** before any
    of this touches real funds — both are genuinely out of scope for an
    engineering pass, regardless of environment.

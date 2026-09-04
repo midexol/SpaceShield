@@ -151,12 +151,15 @@ If either of those doesn't pass cleanly, something broke between sessions
   remove either.
 
 **Deliberately mocked, with a documented real-world grounding:**
-- `MockSpacecoinSource.sol` — satellite status/telemetry. Whether this
-  should be same-chain (like payments turned out to be) or genuinely
-  cross-chain is an OPEN QUESTION — see `architecture.md` §3. Don't resolve
-  this by guessing; it needs actual information about Spacecoin's telemetry
-  architecture, which is a different question from "is the network
-  reachable" — real network access doesn't answer this one.
+- `MockSpacecoinSource.sol` — satellite status/telemetry. Confirmed from
+  Spacecoin's own docs (`docs.spacecoin.org/network/how-it-works`) that
+  telemetry isn't published on-chain at all today — only transaction
+  hashes and payment proofs are — so this stays mocked by necessity, not
+  by guesswork about same-chain-vs-cross-chain. See `architecture.md` §3
+  for the citations. Not yet confirmed BY Spacecoin's team directly (an
+  outreach message is drafted, not confirmed sent — see the same section)
+  — don't upgrade "their docs don't mention it" to "their team confirmed
+  it" without an actual reply.
 - `MockBlockProver.sol` — stand-in for Creditcoin's native precompile at
   `0x0FD2`, installed at that exact address locally via `hardhat_setCode`.
   Speaks the confirmed-real ABI AND is now confirmed to model the real
@@ -218,16 +221,20 @@ Check README.md's "Known gaps" and "What you need to do" sections first —
 they're kept current and are the single source of truth for what's left.
 As of this handoff, in rough priority order:
 
-1. Get `scripts/deploy-testnet.js` actually run (needs a funded key from
-   the project owner — you cannot generate testnet funds yourself).
-2. Resolve the same-chain-vs-cross-chain telemetry question (needs real
-   information from Spacecoin's team, not more reasoning — flag this
-   clearly if asked to "just solve it").
-3. Decide (with the project owner, not unilaterally) whether
+1. ~~Get `scripts/deploy-testnet.js` actually run~~ — done, twice
+   (2026-09-01, then 2026-09-03 with the corrected `SpaceShieldASC`).
+2. ~~Resolve the telemetry question~~ — resolved from Spacecoin's own docs
+   (not on-chain today, on any chain; see `architecture.md` §3). Still
+   waiting on a reply from Spacecoin's team for direct confirmation —
+   don't mark that part done until they actually answer.
+3. Get a real Spacecoin transaction to point `usc-sdk`'s `ProofBuilder` at
+   (part of the same outreach) — the remaining step to make Attestcoin
+   proof *content* real, not just its shape.
+4. Decide (with the project owner, not unilaterally) whether
    `CoverageVault` should integrate `TokenPaymentEscrow` as a secondary
    signal.
-4. Persistence/retry-queue for the Oracle Worker.
-5. Multi-satellite load testing.
+5. Persistence/retry-queue for the Oracle Worker.
+6. Multi-satellite load testing.
 
 ## Style/process notes worth preserving
 
