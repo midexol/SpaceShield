@@ -13,6 +13,31 @@ import { shortHash, explorerTx } from "../../lib/format";
 
 const initStages = () => TRIGGER_STAGES.map(() => ({ status: "idle", note: "" }));
 
+// viem's own top-level message for a reverted contract read/write is often
+// a generic "An unknown error occurred while executing the contract
+// function..." even when the chain returned a perfectly real, specific
+// revert reason (e.g. the real Attestcoin precompile's "Merkle proof
+// validation failed") — that reason lives deeper in viem's error.cause
+// chain, on a ContractFunctionRevertedError's `reason` (or in
+// `metaMessages`), not on the outer error's `shortMessage`. Walk the chain
+// and prefer the most specific thing actually found.
+function extractErrorMessage(err) {
+  const candidates = [];
+  let cur = err;
+  let depth = 0;
+  while (cur && depth < 6) {
+    if (cur.reason) candidates.push(cur.reason);
+    if (Array.isArray(cur.metaMessages) && cur.metaMessages.length) {
+      candidates.push(cur.metaMessages[0].replace(/^Error:\s*/, ""));
+    }
+    if (cur.shortMessage) candidates.push(cur.shortMessage);
+    cur = cur.cause;
+    depth += 1;
+  }
+  const specific = candidates.find((m) => m && !/unknown error occurred/i.test(m));
+  return specific || candidates[0] || err?.message || String(err);
+}
+
 export default function PipelineModal({ open, onClose, network, chainId, onComplete }) {
   const [stages, setStages] = useState(initStages);
   const [running, setRunning] = useState(false);
@@ -51,7 +76,7 @@ export default function PipelineModal({ open, onClose, network, chainId, onCompl
         onComplete?.(res);
       })
       .catch((err) => {
-        const msg = err?.shortMessage || err?.message || String(err);
+        const msg = extractErrorMessage(err);
         setError(msg);
         setRunning(false);
         setStages((prev) =>
