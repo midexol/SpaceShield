@@ -33,6 +33,7 @@
 const express = require("express");
 const { ethers } = require("ethers");
 const { encodeOutageTx, buildMockProof } = require("./proofBuilder");
+const OUTAGE_TX_TYPES = ["string", "bool", "uint256", "string", "uint256"]; // must match proofBuilder.js's encodeOutageTx
 const { verifyViaPrecompile, PRECOMPILE_ADDRESS, PRECOMPILE_ABI } = require("./precompileClient");
 
 // Real, generated ABIs — not hand-typed fragments. A hand-typed ASC_ABI
@@ -86,9 +87,21 @@ async function handleOutageTrigger({ satelliteId, chainKey, blockHeight, provide
 // this worker stakes its (currently sole) oracle vote on it: the tx must
 // exist, target the real precompile directly (top-level — see the module
 // docstring on why that matters), call verifyAndEmit with the exact
-// encodedTx being attested to, and have actually succeeded on-chain.
-// Throws with a client-safe message on any mismatch.
-async function assertRealPrecompileVerification(provider, { precompileTxHash, encodedTx }) {
+// encodedTx being attested to, for the same blockHeight and satelliteId the
+// caller is asking SpaceShieldASC to finalize, and have actually succeeded
+// on-chain. Throws with a client-safe message on any mismatch.
+//
+// blockHeight and satelliteId are checked here, not just encodedTx/receipt
+// status, because SpaceShieldASC.verifyOutage() keys finalization on
+// keccak256(satKey, blockHeight, encodedTx) and looks up the payout
+// operator from the caller-supplied satelliteId alone — trusting this
+// function to have bound them to what the precompile actually verified.
+// Without this, the same real (possibly self-authored, since reportStatus
+// and the precompile both have no access control) proof could be replayed
+// with a different attacker-chosen blockHeight to mint a fresh outageId
+// each time, or paired with an unrelated satelliteId to forge an outage
+// against a satellite/operator that was never actually reported offline.
+async function assertRealPrecompileVerification(provider, { precompileTxHash, encodedTx, blockHeight, satelliteId }) {
   const tx = await provider.getTransaction(precompileTxHash);
   if (!tx) throw new Error(`no such transaction: ${precompileTxHash}`);
   if ((tx.to || "").toLowerCase() !== PRECOMPILE_ADDRESS.toLowerCase()) {
@@ -108,6 +121,19 @@ async function assertRealPrecompileVerification(provider, { precompileTxHash, en
   if (decoded.args.encodedTransaction !== encodedTx) {
     throw new Error("precompileTxHash's encodedTransaction does not match this outage");
   }
+  if (decoded.args.height !== BigInt(blockHeight)) {
+    throw new Error("precompileTxHash's height does not match this outage's blockHeight");
+  }
+
+  let decodedSatelliteId;
+  try {
+    [decodedSatelliteId] = ethers.AbiCoder.defaultAbiCoder().decode(OUTAGE_TX_TYPES, encodedTx);
+  } catch {
+    throw new Error("encodedTx isn't a valid outage encoding");
+  }
+  if (decodedSatelliteId !== satelliteId) {
+    throw new Error("encodedTx's satelliteId does not match the requested satelliteId");
+  }
 
   const receipt = await provider.getTransactionReceipt(precompileTxHash);
   if (!receipt || receipt.status !== 1) {
@@ -116,7 +142,7 @@ async function assertRealPrecompileVerification(provider, { precompileTxHash, en
 }
 
 async function handleAttest({ satelliteId, blockHeight, encodedTx, precompileTxHash, provider, ascAddress, signer }) {
-  await assertRealPrecompileVerification(provider, { precompileTxHash, encodedTx });
+  await assertRealPrecompileVerification(provider, { precompileTxHash, encodedTx, blockHeight, satelliteId });
 
   const cooldownKey = `attest:${satelliteId}`;
   assertCooldownOk(cooldownKey);
