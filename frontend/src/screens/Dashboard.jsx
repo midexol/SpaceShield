@@ -138,8 +138,9 @@ export default function Dashboard() {
     return (
       <div>
         <div className="page-head">
-          <h1>Dashboard</h1>
-          <p className="lede">Your coverage, claims, and payouts — all in one place.</p>
+          <div className="eyebrow">Dashboard</div>
+          <h1>Your coverage, claims, and payouts.</h1>
+          <p className="lede">All in one place — connect a wallet to see yours.</p>
         </div>
         <Card>
           <div className="empty-state">
@@ -165,8 +166,9 @@ export default function Dashboard() {
     return (
       <div>
         <div className="page-head">
-          <h1>Dashboard</h1>
-          <p className="lede">Your coverage, claims, and payouts — all in one place.</p>
+          <div className="eyebrow">Dashboard</div>
+          <h1>Your coverage, claims, and payouts.</h1>
+          <p className="lede">All in one place — once this network is deployed.</p>
         </div>
         <div className="callout warn mono">
           <strong>{net?.name || "This network"} isn't deployed.</strong>{" "}
@@ -239,7 +241,7 @@ export default function Dashboard() {
         <Card>
           <CardHead
             title={sub.isActive ? "Coverage details" : "Get protected"}
-            right={sub.isActive ? <Tag tone="ok">covered</Tag> : <Tag tone="warn">not covered</Tag>}
+            right={sub.isActive ? <Tag tone="ok" flat>covered</Tag> : <Tag tone="warn" flat>not covered</Tag>}
           />
 
           {sub.isActive ? (
@@ -326,7 +328,7 @@ export default function Dashboard() {
               title="Backing bond"
               right={
                 bondRow ? (
-                  <Tag tone={bondRow.healthy ? "ok" : "bad"}>
+                  <Tag tone={bondRow.healthy ? "ok" : "bad"} flat>
                     {bondRow.healthy ? "healthy" : "at risk"}
                   </Tag>
                 ) : null
@@ -382,7 +384,7 @@ export default function Dashboard() {
                       </div>
                       {r.partial ? (
                         <div style={{ marginTop: 8 }}>
-                          <Tag tone="warn">
+                          <Tag tone="warn" flat>
                             partial · covers {formatDuration(coveredSec)} of {formatDuration(fullSec)}
                           </Tag>
                         </div>
@@ -413,7 +415,7 @@ export default function Dashboard() {
                       <span className="k">outage {shortHash(r.outageId)}</span>
                       <span className="v">
                         {r.claimed ? (
-                          <Tag tone="ok">claimed</Tag>
+                          <Tag tone="ok" flat>claimed</Tag>
                         ) : (
                           <span className="hint">{r.reason}</span>
                         )}

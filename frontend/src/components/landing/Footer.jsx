@@ -42,7 +42,7 @@ export default function Footer({ home = false }) {
             <h5>Protocol</h5>
             <a href={`${p}#problem`}>The problem</a>
             <a href={`${p}#architecture`}>Architecture</a>
-            <a href={`${p}#simulate`}>Live simulator</a>
+            <Link to="/app/demo">Live simulator</Link>
           </div>
           <div className="foot-col">
             <h5>Build</h5>

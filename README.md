@@ -79,6 +79,43 @@ sequenceDiagram
 Fifteen seconds, end to end, and the only actor who took an action was the
 subscriber pulling their own money at the very end.
 
+That's the agent-driven flow — the Oracle Worker builds and verifies the
+proof itself, for the local demo and for `agent/monitor.py`. The public
+testnet site can't hand out the oracle's private key to every visitor's
+browser, so it splits the same pipeline differently: a visitor's own wallet
+does everything that's actually permissionless (reporting the outage,
+calling the real Attestcoin precompile), and the Oracle Worker's only job
+is the one step that legitimately needs a registered oracle — which it
+double-checks independently before signing, rather than trusting the
+browser's word for it:
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant W as Visitor's Wallet
+    participant SRC as MockSpacecoinSource
+    participant BP as Block Prover<br/>(0x0FD2 precompile)
+    participant OW as Oracle Worker<br/>(POST /attest)
+    participant ASC as SpaceShieldASC
+
+    W->>SRC: reportStatus(OFFLINE) — no access control, real tx
+    Note over W,SRC: repeated until confirmation floor is met
+    W->>W: build proof (Merkle + continuity) — no tx, deterministic
+    W->>BP: verifyAndEmit(...) — top-level, real tx, no access control
+    BP-->>W: proof accepted, precompileTxHash
+    W->>OW: POST /attest {satelliteId, blockHeight, encodedTx, precompileTxHash}
+    OW->>BP: independently re-fetch + decode precompileTxHash
+    Note over OW: confirms it really called 0x0FD2,<br/>with matching args, and really succeeded
+    OW->>ASC: verifyOutage(...) — signed with the registered oracle's key
+    ASC-->>W: OutageVerified — claimable
+```
+
+No private key ever reaches the browser; the only server-held secret is the
+oracle's, exactly as intended. See `oracle-worker/worker.js`'s docstring and
+`frontend/src/lib/demoTrigger.js`'s `runTriggerOutageTestnet()` for the
+implementation, and the "Public testnet demo (Oracle Worker)" section below
+for how to run one.
+
 ## The architecture
 
 ```mermaid
@@ -319,10 +356,18 @@ Note: a full real settlement on this testnet deployment still can't
 complete end-to-end yet — not because of the precompile (that's resolved),
 but because the proof *content* the Oracle Worker builds is still
 fabricated (`oracle-worker/proofBuilder.js`), since there's no real
-Spacecoin transaction yet to build a genuine Merkle proof from. Submitting
-it will correctly get rejected by the real precompile, exactly like
-`check-precompile.js` demonstrates — that's the real precompile doing its
-job, not a bug.
+Spacecoin transaction yet to build a genuine Merkle proof from. This isn't
+a hedge — it's been directly verified: the exact proof shape
+`frontend/src/lib/demoTrigger.js`'s browser-driven testnet flow builds was
+run against the real live precompile and got the identical
+`"Merkle proof validation failed"` rejection `check-precompile.js`
+demonstrates. **Practically, this means clicking "Trigger outage" on the
+public testnet site today will get through the first two stages for real
+(reporting the outage, building the proof) and then fail at Verify** — the
+real precompile correctly refusing a fabricated proof, not a bug in this
+app. That's the honest current state, not something to paper over; it
+resolves once there's a real Spacecoin transaction to build a genuine
+proof from (see "What you need to do").
 
 ## Structure
 
@@ -350,11 +395,13 @@ for how this list connects to the design decisions above:
 - **Real Attestcoin proof content** — the proof *shape* is now confirmed
   real; the proof *content* is still fabricated because there's no real
   Spacecoin transaction to point a real `usc-sdk` `ProofBuilder` at yet.
-- Oracle Worker persistence/retry queue beyond contract-level idempotency.
-- The Oracle Worker's `/attest` endpoint exists and is tested, but isn't
-  hosted anywhere persistent yet — see "What you need to do" below. Until
-  it is, "Trigger outage" on the public testnet site has nothing to call
-  and won't show as available.
+- Oracle Worker retry queue beyond contract-level idempotency — the worker
+  itself is hosted persistently now (see below), just without a durable
+  queue for retrying a failed submission.
+- **Oracle Worker hosting — done, not just built.** Deployed on Render,
+  confirmed live: `curl https://spaceshield-cter.onrender.com/health`
+  returns the registered oracle's own address. "Trigger outage" on the
+  public testnet site is real and available, not just tested locally.
 - Multi-satellite support is architecturally ready (everything's keyed by
   `satelliteId`) but never load-tested with more than one.
 - No chain-reorg invalidation path.
@@ -383,12 +430,11 @@ Spacecoin's team — none of it is something more code from here can resolve:
    been built into the code**: `SpaceShieldASC.verifyOutage()` no longer
    calls the precompile itself; the Oracle Worker does, directly, as its
    own transaction. No further action needed on this item.
-2. **Deploy the Oracle Worker somewhere persistent (e.g. Render) so
-   "Trigger outage" works on the public site, not just localhost** — see
-   "Public testnet demo (Oracle Worker)" above for exact steps. Needs your
-   own Render account and pasting your already-funded
-   `CC3_TESTNET_PRIVATE_KEY` into Render's own secrets UI (never anywhere
-   else) — that's the one step here only you can do.
+2. ~~Deploy the Oracle Worker somewhere persistent so "Trigger outage" works
+   on the public site, not just localhost~~ — **done.** Live on Render;
+   `VITE_ORACLE_WORKER_URL` is set on the Vercel frontend project too. See
+   "Public testnet demo (Oracle Worker)" above if you ever need to
+   redeploy it (e.g. after rotating the oracle key).
 3. **Decide CoverageVault's relationship to Spacecoin's real
    `TokenPaymentEscrow`** — stay fully independent (current state, and
    arguably the more honest default), or additionally require some signal

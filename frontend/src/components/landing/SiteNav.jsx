@@ -3,7 +3,6 @@ import { Link } from "react-router-dom";
 
 const SECTIONS = [
   ["#problem", "Problem"],
-  ["#simulate", "Simulate"],
   ["#architecture", "Architecture"],
   ["#cases", "Case studies"],
   ["#faq", "FAQ"],

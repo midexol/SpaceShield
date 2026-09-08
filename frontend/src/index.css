@@ -1185,9 +1185,9 @@ footer.site-footer {
 .page-head h1 {
   font-family: var(--sans);
   font-weight: 800;
-  font-size: clamp(26px, 3.6vw, 38px);
-  letter-spacing: -0.02em;
-  line-height: 1.08;
+  font-size: clamp(28px, 4vw, 43px);
+  letter-spacing: -0.025em;
+  line-height: 1.06;
 }
 .page-head p {
   color: var(--ink-soft);
@@ -1427,6 +1427,137 @@ footer.site-footer {
 }
 .tag.bad .dot {
   background: var(--rust);
+}
+
+/* Flat pills — soft-filled, no border/dot, calmer editorial status style
+   (used on Dashboard + Docs). Same tone vocabulary as .tag. */
+.pill {
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: 0.03em;
+  font-weight: 600;
+  padding: 5px 11px;
+  border-radius: 20px;
+  display: inline-flex;
+  align-items: center;
+  color: var(--ink-soft);
+  background: var(--stone-deep);
+  white-space: nowrap;
+}
+.pill.ok {
+  color: var(--green);
+  background: var(--green-dim);
+}
+.pill.warn {
+  color: var(--amber);
+  background: var(--amber-dim);
+}
+.pill.bad {
+  color: var(--rust);
+  background: var(--rust-dim);
+}
+
+/* Count badge — small number chip next to a section title */
+.count-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 22px;
+  height: 22px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--stone-deep);
+  color: var(--ink-soft);
+  font-family: var(--mono);
+  font-size: 11px;
+  font-weight: 700;
+  margin-left: 10px;
+}
+
+/* Section title — a bigger, editorial heading above a status-table group */
+.section-title {
+  display: flex;
+  align-items: center;
+  font-family: var(--sans);
+  font-weight: 800;
+  font-size: 22px;
+  letter-spacing: -0.01em;
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.section-sub {
+  font-size: 14px;
+  color: var(--ink-soft);
+  max-width: 620px;
+  margin-bottom: 16px;
+}
+
+/* Status table — bordered rows with INTEGRATION / ROLE / DETAIL columns and
+   monospace evidence lines, in the spirit of a real-vs-mocked capability
+   tracker. Falls back to a stacked card layout on narrow screens. */
+.status-table {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: var(--paper);
+  overflow: hidden;
+}
+.status-table-head {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1.7fr;
+  gap: 16px;
+  padding: 13px 20px;
+  background: var(--stone);
+}
+.status-table-head span {
+  font-family: var(--mono);
+  font-size: 10.5px;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--ink-soft);
+}
+.status-row {
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr 1.7fr;
+  gap: 16px;
+  padding: 18px 20px;
+  border-top: 1px solid var(--line);
+}
+.status-row .name {
+  font-weight: 700;
+  font-size: 14.5px;
+  margin-bottom: 8px;
+}
+.status-row .role {
+  font-size: 13px;
+  color: var(--ink-soft);
+  line-height: 1.5;
+}
+.status-row .detail {
+  font-size: 13.5px;
+  color: var(--ink);
+  line-height: 1.6;
+}
+.status-row .evidence {
+  display: block;
+  margin-top: 8px;
+  font-family: var(--mono);
+  font-size: 12px;
+  color: var(--ink-soft);
+  line-height: 1.6;
+}
+.status-row .evidence code {
+  background: var(--stone);
+  padding: 1px 5px;
+  border-radius: 4px;
+}
+@media (max-width: 760px) {
+  .status-table-head {
+    display: none;
+  }
+  .status-row {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
 }
 
 /* Callouts (honesty notices) */

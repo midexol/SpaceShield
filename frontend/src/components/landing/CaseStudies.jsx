@@ -88,9 +88,9 @@ export default function CaseStudies() {
           <Link className="btn green" to="/app/network">
             See it live on the Network page →
           </Link>
-          <a className="btn ghost" href="#simulate">
+          <Link className="btn ghost" to="/app/demo">
             Replay the simulator
-          </a>
+          </Link>
         </div>
       </div>
     </section>

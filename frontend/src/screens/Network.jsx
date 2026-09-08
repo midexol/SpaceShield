@@ -145,6 +145,13 @@ export default function Network() {
                     ? "Runs the real detect → prove → verify → settle pipeline on the local chain."
                     : "Runs the real detect → prove → verify → settle pipeline on Creditcoin testnet, with your own wallet."}
                 </p>
+                {net?.isLocal === false ? (
+                  <p className="hint" style={{ fontSize: 12.5 }}>
+                    Expected to fail at Verify right now — the real Attestcoin precompile correctly
+                    rejects the proof because there's no real Spacecoin transaction yet to build a
+                    genuine one from. Not a bug; see the Docs page.
+                  </p>
+                ) : null}
               </>
             ) : (
               <div className="callout info">

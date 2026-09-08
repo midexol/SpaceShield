@@ -7,6 +7,8 @@ const LINKS = [
   { to: "/app/network", end: false, ic: "signal", label: "Network" },
   { to: "/app/history", end: false, ic: "clock", label: "History" },
   { to: "/app/vision", end: false, ic: "compass", label: "Vision" },
+  { to: "/app/demo", end: false, ic: "activity", label: "Demo" },
+  { to: "/app/docs", end: false, ic: "file", label: "Docs" },
   { to: "/app/settings", end: false, ic: "settings", label: "Settings" },
 ];
 

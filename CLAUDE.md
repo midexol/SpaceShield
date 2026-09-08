@@ -193,19 +193,48 @@ If either of those doesn't pass cleanly, something broke between sessions
 The frontend is real and substantial — do not describe it as absent or as
 "just a marketing page." Two routes, both live:
 
-1. **`/` (Landing)** — marketing site: hero, problem statement, a
-   deliberately-labeled illustrative simulator (fake timers, clearly
-   captioned as such — the REAL pipeline lives at `/app/network`'s
-   "Trigger outage," not here), architecture explainer, case studies, FAQ,
-   footer. Dark theme, blue accent, its own design system in
+1. **`/` (Landing)** — marketing site: hero, problem statement, architecture
+   explainer, case studies, FAQ, footer. The illustrative simulator used to
+   live inline here (fake timers) — it's been moved to `/app/demo` instead
+   (see below) so there's one canonical illustrative experience, not two;
+   every "Run/Replay the simulator" link on the landing page now routes
+   there. Dark theme, blue accent, its own design system in
    `frontend/src/index.css` under `.landing-dark`.
 2. **`/app/*` (the dApp)** — wallet-connected, RainbowKit/wagmi, light
-   theme: Dashboard (coverage status, claimable outages, real
-   `lockCoverage`/`claim`/`withdrawCoverage` transactions), Network (public
-   transparency page — bond health, telemetry, and a real
-   "Trigger outage" button that runs the actual detect→prove→verify→settle
-   pipeline as real transactions on the local chain), History (full audit
-   log with expandable proof chains), Settings.
+   theme:
+   - **Dashboard** — coverage status, claimable outages, real
+     `lockCoverage`/`claim`/`withdrawCoverage` transactions.
+   - **Network** — public transparency page (bond health, telemetry, no
+     wallet required) plus a real "Trigger outage" button. This now runs
+     for real on TWO networks, differently: locally (31337) it signs every
+     step with the deployment's throwaway oracle key; on Creditcoin
+     testnet, the connected wallet signs every step it's actually allowed
+     to (`reportStatus` and the real Attestcoin precompile both have no
+     access control), and only the final oracle-gated `verifyOutage()` call
+     is handed to the always-on Oracle Worker (`oracle-worker/worker.js`'s
+     `POST /attest`), which independently re-checks the wallet's precompile
+     transaction before attesting to it rather than trusting it blindly.
+     See `frontend/src/lib/demoTrigger.js`'s `runTriggerOutageTestnet()`
+     and README's "Public testnet demo (Oracle Worker)" section. Don't
+     reintroduce a browser-held private key for the testnet path — that
+     was the whole point of splitting it this way.
+   - **History** — full audit log with expandable proof chains.
+   - **Vision** — plain-language, judge-facing walkthrough of the payout
+     flow plus an honest real-vs-pending status per stage. No wallet
+     needed.
+   - **Docs** — technical reference: live contract addresses for whichever
+     network is connected, and a three-tier (Live / Needs confirmation /
+     Mocked) integration-status tracker, evidence-cited. No wallet needed.
+   - **Demo** — the illustrative simulator, moved here from the landing
+     page: a satellite ONLINE/OFFLINE toggle drives the same four-stage
+     pipeline visual, and a payout breakdown for several mock subscribers
+     computed with the *actual* `SettlementContract.claim()` pro-rata
+     formula (not canned numbers), including a per-subscriber "Claim →"
+     step so it doesn't misrepresent payment as an automatic push. Exists
+     specifically because Spacecoin hasn't confirmed real telemetry yet —
+     see architecture.md §3. Clearly labeled illustrative; don't let it
+     drift into looking like the real pipeline (that's Network's job).
+   - **Settings**.
 
 Both share one token-based CSS system (`frontend/src/index.css`) — the
 landing page's dark palette is a scoped override (`.landing-dark`), not a

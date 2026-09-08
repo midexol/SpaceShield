@@ -5,6 +5,8 @@ import Dashboard from "./screens/Dashboard";
 import Network from "./screens/Network";
 import History from "./screens/History";
 import Vision from "./screens/Vision";
+import Docs from "./screens/Docs";
+import Demo from "./screens/Demo";
 import Settings from "./screens/Settings";
 import Privacy from "./screens/Privacy";
 import NotFound from "./screens/NotFound";
@@ -22,6 +24,8 @@ export default function App() {
         <Route path="network" element={<Network />} />
         <Route path="history" element={<History />} />
         <Route path="vision" element={<Vision />} />
+        <Route path="docs" element={<Docs />} />
+        <Route path="demo" element={<Demo />} />
         <Route path="settings" element={<Settings />} />
       </Route>
       <Route path="/privacy" element={<Privacy />} />

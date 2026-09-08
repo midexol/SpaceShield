@@ -50,9 +50,9 @@ export default function Hero() {
             </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
-            <a className="btn" href="#simulate">
+            <Link className="btn" to="/app/demo">
               Run the simulator
-            </a>
+            </Link>
           </motion.div>
           <motion.div whileHover={{ scale: 1.04 }} whileTap={{ scale: 0.96 }}>
             <a className="btn ghost" href="#architecture">

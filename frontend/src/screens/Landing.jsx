@@ -5,7 +5,6 @@ import SiteNav from "../components/landing/SiteNav";
 import Hero from "../components/landing/Hero";
 import StatsBand from "../components/landing/StatsBand";
 import Problem from "../components/landing/Problem";
-import Simulator from "../components/landing/Simulator";
 import PromiseBand from "../components/landing/Promise";
 import Architecture from "../components/landing/Architecture";
 import CaseStudies from "../components/landing/CaseStudies";
@@ -27,7 +26,6 @@ export default function Landing() {
       <Hero />
       <StatsBand />
       <Problem />
-      <Simulator />
       <PromiseBand />
       <Architecture />
       <CaseStudies />

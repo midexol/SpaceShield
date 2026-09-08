@@ -285,6 +285,26 @@ where it is the transaction's direct target (top-level, `tx.to ==
 of `.call` vs `.staticcall`.** This is a real constraint of Creditcoin's
 implementation, not a bug in this repo's ABI or call style.
 
+```mermaid
+sequenceDiagram
+    participant Caller as EOA (oracle key)
+    participant ASC as SpaceShieldASC
+    participant BP as Block Prover (0x0FD2)
+
+    rect rgb(40, 20, 20)
+    Note over Caller,BP: Nested call — what this repo shipped first
+    Caller->>ASC: verifyOutage(...)
+    ASC->>BP: .call() / .staticcall() to 0x0FD2
+    BP--xASC: fails at the call boundary — never reaches verification logic
+    end
+
+    rect rgb(20, 35, 20)
+    Note over Caller,BP: Top-level call — what actually works
+    Caller->>BP: verify(...) / verifyAndEmit(...) directly
+    BP-->>Caller: real verification logic runs — accepts or rejects the proof
+    end
+```
+
 **This means `SpaceShieldASC.sol`'s core design assumption didn't hold on
 real Creditcoin: a contract cannot call the Block Prover precompile
 internally.** The fix has been made, not just diagnosed. The precompile is
