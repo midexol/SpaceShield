@@ -8,10 +8,15 @@
     "start": "node ./node_modules/next/dist/bin/next start"
   },
   "dependencies": {
+    "@types/node": "^22.20.2",
     "next": "^15.1.0",
     "nextra": "^4.6.1",
     "nextra-theme-docs": "^4.6.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "typescript": "6.0.3"
   }
 }

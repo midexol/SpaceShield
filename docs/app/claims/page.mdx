@@ -8,12 +8,14 @@ SpaceShield implements a transparent, pull-based compensation model to protect o
 
 Payout amounts depend on the subscriber's active coverage duration relative to the global `COMPENSATION_WINDOW`:
 
-$$\text{Claimable Amount} = \frac{\text{Operator Collateral Bond} \times \text{Subscriber Active Duration}}{\text{COMPENSATION\_WINDOW}}$$
+```text
+Claimable Amount = (Operator Collateral Bond * Subscriber Active Duration) / COMPENSATION_WINDOW
+```
 
 ### Example
 
 - **Operator Bond**: 100,000 CTC
-- **Subscriber Coverage**: 30 days active out of 30-day window ($100\%$)
+- **Subscriber Coverage**: 30 days active out of 30-day window (100%)
 - **Payout**: 100,000 CTC (pro-rata allocated among active subscribers)
 
 ---

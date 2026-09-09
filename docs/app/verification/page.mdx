@@ -6,7 +6,7 @@ Creditcoin and Attestcoin utilize Native Query Verification (`INativeQueryVerifi
 
 ## Precompile Verification Flow
 
-```
+```text
 ┌────────────────────────┐
 │ SpaceShieldASC         │
 └───────────┬────────────┘
@@ -22,8 +22,8 @@ Creditcoin and Attestcoin utilize Native Query Verification (`INativeQueryVerifi
 
 ### Attestation Threshold Consensus
 
-For threshold $M=2$:
+For threshold M=2:
 
-1. Oracle 1 submits `verifyOutage()` $\rightarrow$ Recorded on-chain (`attestations[satelliteId] = 1`).
-2. Oracle 2 submits `verifyOutage()` $\rightarrow$ Recorded on-chain (`attestations[satelliteId] = 2`).
-3. Threshold reached ($2 \ge 2$) $\rightarrow$ `registerSettlement()` automatically invoked.
+1. Oracle 1 submits `verifyOutage()` -> Recorded on-chain (`attestations[satelliteId] = 1`).
+2. Oracle 2 submits `verifyOutage()` -> Recorded on-chain (`attestations[satelliteId] = 2`).
+3. Threshold reached (2 >= 2) -> `registerSettlement()` automatically invoked.

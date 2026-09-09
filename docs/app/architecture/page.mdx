@@ -8,7 +8,7 @@ This document serves as the technical architecture specification for SpaceShield
 
 1. **No Human in the Loop**: Outage detection, verification, attestation, and compensation calculation occur strictly on-chain and through deterministic oracles.
 2. **Dual-Condition Telemetry Verification**: The AI agent requires both the Spacecoin status feed AND live NORAD TLE orbital tracking data before emitting a trigger.
-3. **M-of-N Oracle Threshold Consensus**: No individual oracle key can single-handedly trigger a settlement. Threshold $M$ distinct registered oracles must submit valid cryptographic attestations.
+3. **M-of-N Oracle Threshold Consensus**: No individual oracle key can single-handedly trigger a settlement. Threshold M distinct registered oracles must submit valid cryptographic attestations.
 4. **Pull-Based Pro-Rata Settlement**: Subscribers claim compensation from operator bonds, preventing reentrancy vulnerabilities and gas griefing attacks.
 
 ---

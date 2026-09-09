@@ -50,7 +50,7 @@ Called strictly by `SpaceShieldASC`. Marks an outage as claimable.
 #### `claim(uint256 settlementId)`
 Pulled by individual subscribers. Calculates pro-rata payout based on `CoverageVault` policy duration and transfers funds.
 
-```solidity
+```text
 uint256 payout = (operatorBond * subscriberDuration) / COMPENSATION_WINDOW;
 ```
 
