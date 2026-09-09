@@ -1,0 +1,24 @@
+# Relayer & Proof Worker
+
+The Oracle Worker (`oracle-worker/worker.js`) bridges the AI detection agent and the EVM smart contracts.
+
+---
+
+## Workflow
+
+1. **HTTP Endpoint**: Listens for POST triggers from `agent/monitor.py` at `/api/trigger-outage`.
+2. **Proof Assembly**: Invokes `proofBuilder.js` to assemble the ABI-encoded `INativeQueryVerifier` proof payload.
+3. **Transaction Submission**: Signs and broadcasts the `verifyOutage()` transaction to `SpaceShieldASC`.
+
+---
+
+## Proof Payload Structure
+
+```javascript
+const proofPayload = abi.encode(
+  ["uint256", "bytes32", "bytes", "uint256"],
+  [satelliteId, merkleRoot, blockHeaderProof, timestamp]
+);
+```
+
+The payload matches Creditcoin's native query verifier interface, allowing seamless verification against the `0x0FD2` precompile.

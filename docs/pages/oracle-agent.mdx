@@ -1,0 +1,32 @@
+# AI Oracle Agent
+
+The AI Oracle Agent (`agent/monitor.py`) acts as the external detection layer for SpaceShield.
+
+---
+
+## Dual-Condition Verification Strategy
+
+To prevent false positives and malicious oracle triggers, the agent enforces a strict dual-condition verification policy:
+
+```python
+def should_trigger_outage(satellite_id):
+    telemetry_status, confirmations = check_spacecoin_feed(satellite_id)
+    celestrak_active = cross_check_celestrak(satellite_id)
+    
+    # Dual condition gate:
+    # 1. Telemetry status indicates outage AND confirmations >= MIN_CONFIRMATIONS
+    # 2. Independent CelesTrak TLE tracker confirms missing pass / anomaly
+    return (telemetry_status == "DOWN" and 
+            confirmations >= MIN_CONFIRMATIONS and 
+            not celestrak_active)
+```
+
+---
+
+## CelesTrak NORAD TLE Tracker (`agent/public_tracker.py`)
+
+The public tracker fetches Two-Line Element (TLE) orbital sets directly from [CelesTrak](https://celestrak.org):
+
+- Fetches official NORAD catalog numbers.
+- Computes orbital decay vectors and active transmission windows.
+- Operates in both simulated mode and `--live` API mode against real satellite catalog entries.

@@ -1,0 +1,94 @@
+# Getting Started
+
+This guide walks you through setting up and running SpaceShield locally, including the smart contract test suite, the AI oracle monitoring agent, the proof worker, and the React frontend.
+
+---
+
+## Prerequisites
+
+Ensure you have the following installed on your machine:
+
+- **Node.js**: `v18.x` or `v20.x`
+- **Python**: `3.10` or higher (with `pip`)
+- **Git**: For cloning and repository management
+- **npm** or **pnpm**: Package manager
+
+---
+
+## 1. Installation
+
+Clone the repository and install root dependencies:
+
+```bash
+git clone https://github.com/midexol/SpaceShield.git
+cd SpaceShield
+npm install
+```
+
+Install frontend dependencies:
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+Install Python agent dependencies:
+
+```bash
+python -m pip install requests urllib3
+```
+
+---
+
+## 2. Running Contract Tests
+
+Run the Hardhat test suite to verify smart contract behavior:
+
+```bash
+npx hardhat test
+```
+
+Expected output:
+
+```text
+  SpaceShield Protocol Suite
+    ✔ Should verify oracle attestation threshold
+    ✔ Should calculate pro-rata compensation correctly
+    ✔ Should prevent unauthorized settlement registration
+    ✔ Should allow subscribers to pull claims
+```
+
+---
+
+## 3. Running the Multi-Process System Demo
+
+To demonstrate an end-to-end automated satellite outage detection and settlement flow:
+
+### Step A: Start Local Hardhat Node
+```bash
+npx hardhat node
+```
+
+### Step B: Deploy Contracts to Local Network
+```bash
+npx hardhat run scripts/deploy.js --network localhost
+```
+
+### Step C: Launch the Oracle Proof Worker
+```bash
+node oracle-worker/worker.js
+```
+
+### Step D: Launch the AI Oracle Agent
+```bash
+python agent/monitor.py --live
+```
+
+### Step E: Launch the Frontend Prototype
+```bash
+cd frontend
+npm run dev
+```
+
+Open [http://localhost:5173](http://localhost:5173) in your browser to view the interactive dashboard.

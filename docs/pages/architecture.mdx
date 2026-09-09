@@ -1,0 +1,46 @@
+# Architecture & Design Reference
+
+This document serves as the technical architecture specification for SpaceShield. It explains how the system components interact, data movement pathways, cryptographic proof structures, and trust boundaries.
+
+---
+
+## 1. Core Principles
+
+1. **No Human in the Loop**: Outage detection, verification, attestation, and compensation calculation occur strictly on-chain and through deterministic oracles.
+2. **Dual-Condition Telemetry Verification**: The AI agent requires both the Spacecoin status feed AND live NORAD TLE orbital tracking data before emitting a trigger.
+3. **M-of-N Oracle Threshold Consensus**: No individual oracle key can single-handedly trigger a settlement. Threshold $M$ distinct registered oracles must submit valid cryptographic attestations.
+4. **Pull-Based Pro-Rata Settlement**: Subscribers claim compensation from operator bonds, preventing reentrancy vulnerabilities and gas griefing attacks.
+
+---
+
+## 2. Component Data Flow
+
+Data moves sequentially through 6 primary components:
+
+### 1. Satellite Status Source (`contracts/MockSpacecoinSource.sol`)
+Records satellite uptime/downtime states with a confirmation counter.
+
+### 2. AI Oracle Agent (`agent/monitor.py`)
+Polls `MockSpacecoinSource`, cross-checks against NORAD TLE orbital data via CelesTrak (`agent/public_tracker.py`), and triggers the worker only when both sources confirm an outage above `MIN_CONFIRMATIONS`.
+
+### 3. Oracle Worker (`oracle-worker/worker.js`)
+Receives HTTP triggers from the AI agent, builds the `INativeQueryVerifier` proof payload (`oracle-worker/proofBuilder.js`), and submits the transaction to `SpaceShieldASC`.
+
+### 4. SpaceShieldASC (`contracts/SpaceShieldASC.sol`)
+An Attested Smart Contract that verifies the proof via the Block Prover precompile (`0x0FD2`). Aggregates M-of-N oracle signatures and calls `SettlementContract.registerSettlement()` upon reaching threshold.
+
+### 5. CoverageVault (`contracts/CoverageVault.sol`)
+Manages on-chain subscriber insurance policies and records exact subscription timestamps.
+
+### 6. SettlementContract (`contracts/SettlementContract.sol`)
+Holds operator security bonds. Calculates pro-rata subscriber entitlements and enables pull-based claims.
+
+---
+
+## 3. Telemetry Evidence & Primary Sources
+
+Based on primary source analysis of Spacecoin's official documentation (`docs.spacecoin.org/network/how-it-works`) and public disclosures:
+
+- Spacecoin records **transaction hashes** and **payment delivery proofs** on-chain.
+- Operational satellite health feeds are not published directly to Creditcoin block headers.
+- SpaceShield bridges this gap by cross-referencing CelesTrak public NORAD two-line element (TLE) telemetry to verify physical satellite decay or loss of pass contact.

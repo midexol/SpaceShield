@@ -1,0 +1,12 @@
+{
+  "index": "Overview",
+  "getting-started": "Getting Started",
+  "architecture": "Architecture",
+  "contracts": "Smart Contracts",
+  "oracle-agent": "AI Oracle Agent",
+  "relayer": "Relayer & Proof Worker",
+  "claims": "Compensation & Claims",
+  "verification": "Native Query Verification",
+  "deployment": "Vercel & Deployment",
+  "faq": "FAQ & Trust Model"
+}

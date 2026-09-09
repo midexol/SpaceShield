@@ -1,0 +1,12 @@
+:root {
+  --nextra-primary-hue: 155deg;
+}
+
+/* Custom styling for SpaceShield brand code blocks and alerts */
+.nextra-code-block {
+  border-radius: 8px;
+}
+
+.nextra-callout {
+  border-radius: 8px;
+}

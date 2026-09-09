@@ -1043,9 +1043,38 @@ footer.site-footer {
   display: flex;
   flex-direction: column;
   padding: 22px 16px;
+  transition: width 0.22s cubic-bezier(0.4, 0, 0.2, 1), padding 0.22s cubic-bezier(0.4, 0, 0.2, 1);
 }
-.sidebar .brand {
-  padding: 6px 8px 22px;
+.sidebar.collapsed {
+  width: 72px;
+  padding: 22px 10px;
+}
+.sidebar .sidebar-header {
+  padding-bottom: 22px;
+}
+.sidebar.collapsed .sidebar-header {
+  justify-content: center;
+  gap: 8px;
+}
+.sidebar.collapsed .side-link {
+  justify-content: center;
+  padding: 11px 0;
+}
+.collapse-toggle-btn {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ink-soft);
+  border-radius: 8px;
+  padding: 6px;
+  transition: color 0.18s ease, background 0.18s ease;
+}
+.collapse-toggle-btn:hover {
+  color: var(--ink);
+  background: var(--stone);
 }
 .side-links {
   display: flex;

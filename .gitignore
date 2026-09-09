@@ -2,6 +2,10 @@ node_modules/
 frontend/node_modules/
 frontend/dist/
 frontend/dist-ssr/
+docs/node_modules/
+docs/.next/
+docs/.vercel/
+docs/out/
 .env
 .env.local
 *.local

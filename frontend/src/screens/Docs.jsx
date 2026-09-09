@@ -136,6 +136,8 @@ export default function Docs() {
       ]
     : [];
 
+  const docsUrl = import.meta.env.VITE_DOCS_URL || "https://spaceshield-docs.vercel.app";
+
   return (
     <div>
       <div className="page-head">
@@ -145,6 +147,28 @@ export default function Docs() {
           A technical reference, not a pitch — contract addresses, the real pipeline, and an
           honest status of every integration this protocol depends on.
         </p>
+      </div>
+
+      <div style={{ padding: "16px 20px", borderRadius: 12, marginBottom: 24, background: "rgba(47, 107, 79, 0.15)", border: "1px solid rgba(47, 107, 79, 0.4)", display: "flex", alignItems: "center", justifyContent: "space-between", gap: 16, flexWrap: "wrap" }}>
+        <div>
+          <div style={{ fontWeight: 600, color: "var(--green)", fontSize: 16, display: "flex", alignItems: "center", gap: 8 }}>
+            <span>📚 SpaceShield Nextra 4 Documentation Site</span>
+            <Tag variant="green">Nextra 4.6.1</Tag>
+          </div>
+          <p style={{ fontSize: 13, color: "var(--ink-soft)", marginTop: 4, margin: "4px 0 0" }}>
+            Explore full MDX specifications, Next.js architecture diagrams, and pagefind static full-text search.
+          </p>
+        </div>
+        <a
+          href={docsUrl}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="btn small green"
+          style={{ textDecoration: "none", display: "inline-flex", alignItems: "center", gap: 6, whiteSpace: "nowrap" }}
+        >
+          <span>Open Nextra Docs</span>
+          <Icon name="arrowRight" size={14} />
+        </a>
       </div>
 
       <Card style={{ marginBottom: 28 }}>

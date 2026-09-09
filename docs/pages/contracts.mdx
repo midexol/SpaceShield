@@ -1,0 +1,62 @@
+# Smart Contracts Reference
+
+SpaceShield's smart contract suite is written in Solidity `^0.8.24` and deployed on Creditcoin / Attestcoin EVM networks.
+
+---
+
+## 1. `SpaceShieldASC.sol`
+
+The **Attested Smart Contract (ASC)** handles M-of-N oracle consensus and proof verification.
+
+### Key Functions
+
+#### `registerOracle(address oracle)`
+Registers a authorized oracle key. Requires contract owner privileges.
+
+#### `setAttestationThreshold(uint256 threshold)`
+Updates the M-of-N consensus threshold.
+
+#### `verifyOutage(bytes calldata proofPayload, uint256 satelliteId, string calldata reason)`
+Submits an outage proof. Calls precompile `0x0FD2` (`INativeQueryVerifier`). When attestations reach `attestationThreshold`, it triggers `SettlementContract.registerSettlement()`.
+
+---
+
+## 2. `CoverageVault.sol`
+
+The **CoverageVault** tracks active subscriber policies and coverage periods.
+
+### Key Functions
+
+#### `subscribe(uint256 duration)`
+Allows a user to pay coverage fees and register an active policy.
+
+#### `getSubscriptionDuration(address user)`
+Returns the total active duration (in seconds) the subscriber has maintained coverage.
+
+---
+
+## 3. `SettlementContract.sol`
+
+The **SettlementContract** holds operator collateral bonds and processes subscriber payouts.
+
+### Key Functions
+
+#### `depositBond()`
+Operator deposits collateral funds into the contract pool.
+
+#### `registerSettlement(uint256 satelliteId, uint256 timestamp)`
+Called strictly by `SpaceShieldASC`. Marks an outage as claimable.
+
+#### `claim(uint256 settlementId)`
+Pulled by individual subscribers. Calculates pro-rata payout based on `CoverageVault` policy duration and transfers funds.
+
+```solidity
+uint256 payout = (operatorBond * subscriberDuration) / COMPENSATION_WINDOW;
+```
+
+---
+
+## 4. Mock Contracts
+
+- **`MockBlockProver.sol`**: Deployed at `0x0FD2` via `hardhat_setCode` during local testing to simulate the Attestcoin Native Query Verifier.
+- **`MockSpacecoinSource.sol`**: Simulates satellite state changes and telemetry confirmation counters.

@@ -76,6 +76,13 @@ const PATHS = {
       <path d="M7 7h10v10" />
     </>
   ),
+  chevronLeft: <path d="M15 18l-6-6 6-6" />,
+  panelLeft: (
+    <>
+      <rect width="18" height="18" x="3" y="3" rx="2" />
+      <path d="M9 3v18" />
+    </>
+  ),
 };
 
 export default function Icon({ name, size = 20, strokeWidth = 1.7, className = "", title, ...rest }) {

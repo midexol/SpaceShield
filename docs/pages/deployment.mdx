@@ -1,0 +1,56 @@
+# Vercel & Deployment Guide
+
+This guide explains how to deploy SpaceShield Docs on **Vercel** and configure redirection from the main Vite web application.
+
+---
+
+## 1. Deploying Nextra Docs to Vercel
+
+The `docs` directory is a standalone Next.js + Nextra 4 application.
+
+### Vercel Project Settings
+
+- **Framework Preset**: `Next.js`
+- **Root Directory**: `docs`
+- **Build Command**: `next build`
+- **Output Directory**: `.next`
+
+### Deploying via Vercel CLI
+
+```bash
+cd docs
+vercel --prod
+```
+
+Once deployed, Vercel will assign a production URL (e.g., `https://spaceshield-docs.vercel.app`).
+
+---
+
+## 2. Redirection from Main Application to Docs
+
+The main React application (in `frontend/`) redirects `/docs` or `/app/docs` to the Nextra documentation site.
+
+### Environment Variable (`frontend/.env`)
+
+```env
+VITE_DOCS_URL=https://spaceshield-docs.vercel.app
+```
+
+### Route Redirection in `frontend/src/screens/Docs.jsx`
+
+```jsx
+import { useEffect } from 'react';
+
+export default function DocsRedirect() {
+  useEffect(() => {
+    const docsUrl = import.meta.env.VITE_DOCS_URL || 'https://spaceshield-docs.vercel.app';
+    window.location.href = docsUrl;
+  }, []);
+
+  return (
+    <div style={{ padding: '40px', textAlign: 'center' }}>
+      <p>Redirecting to official SpaceShield Nextra Docs...</p>
+    </div>
+  );
+}
+```

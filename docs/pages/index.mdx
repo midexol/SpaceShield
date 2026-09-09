@@ -1,0 +1,54 @@
+# SpaceShield Documentation
+
+Welcome to the official documentation for **SpaceShield**, an autonomous satellite outage insurance and compensation protocol designed for the **Spacecoin** ecosystem on Creditcoin / Attestcoin.
+
+> **SpaceShield** answers one question automatically: when a Spacecoin satellite goes down, who gets compensated, how much, and who decides that without a human in the loop?
+
+---
+
+## Key Highlights
+
+- 🛰️ **Autonomous Outage Detection**: Dual-sourced monitoring combining Spacecoin status feeds with real-time NORAD TLE orbital tracking via CelesTrak.
+- 🔒 **M-of-N Oracle Attestation**: Multi-oracle consensus requiring independent verification before any payout is triggered.
+- ⚡ **Native Query Verification**: Built on Creditcoin/Attestcoin `INativeQueryVerifier` and the Block Prover precompile (`0x0FD2`).
+- 💎 **Pull-Based Pro-Rata Settlement**: Subscriber compensation derived from operator bonds, calculated transparently on-chain relative to subscription duration.
+
+---
+
+## System Architecture at a Glance
+
+```
+┌───────────────────────┐
+│ MockSpacecoinSource   │ Satellite Telemetry Source
+└───────────┬───────────┘
+            │ Polls & cross-checks against CelesTrak
+┌───────────▼───────────┐
+│ AI Oracle Agent       │ (agent/monitor.py)
+└───────────┬───────────┘
+            │ HTTP Trigger
+┌───────────▼───────────┐
+│ Oracle Worker         │ (oracle-worker/worker.js)
+└───────────┬───────────┘
+            │ verifyOutage(...) via 0x0FD2 Precompile
+┌───────────▼───────────┐        ┌───────────────────────┐
+│ SpaceShieldASC        │◄───────┤ MockBlockProver       │
+└───────────┬───────────┘        └───────────────────────┘
+            │ registerSettlement(...)
+┌───────────▼───────────┐        ┌───────────────────────┐
+│ SettlementContract    │◄───────┤ CoverageVault         │
+└───────────┬───────────┘        └───────────────────────┘
+            │ claim()
+┌───────────▼───────────┐
+│ Subscriber            │
+└───────────────────────┘
+```
+
+---
+
+## Quick Navigation
+
+- 🚀 **[Getting Started](/getting-started)**: Run the full multi-process demo locally in under 3 minutes.
+- 🏛️ **[Architecture](/architecture)**: Detailed technical specifications, data flow, and trust model.
+- 📜 **[Smart Contracts](/contracts)**: Solidity contracts breakdown, inheritance, and interface specifications.
+- 🤖 **[AI Oracle Agent](/oracle-agent)**: NORAD TLE cross-checking logic and detection triggers.
+- 🛠️ **[Vercel & Deployment](/deployment)**: How to deploy docs and frontend on Vercel with main app redirects.

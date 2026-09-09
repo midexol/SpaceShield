@@ -11,7 +11,6 @@ const TITLES = {
   "/app/network": "Network",
   "/app/history": "History",
   "/app/vision": "Vision",
-  "/app/docs": "Docs",
   "/app/demo": "Demo",
   "/app/settings": "Settings",
 };

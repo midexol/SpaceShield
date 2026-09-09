@@ -1,0 +1,29 @@
+# Native Query Verification
+
+Creditcoin and Attestcoin utilize Native Query Verification (`INativeQueryVerifier`) via precompiled contract `0x0FD2`.
+
+---
+
+## Precompile Verification Flow
+
+```
+┌────────────────────────┐
+│ SpaceShieldASC         │
+└───────────┬────────────┘
+            │ 1. Calls 0x0FD2.verifyHeader(...)
+┌───────────▼────────────┐
+│ 0x0FD2 Precompile      │ (Mocked locally by MockBlockProver.sol)
+└───────────┬────────────┘
+            │ 2. Validates Merkle proof against block header
+┌───────────▼────────────┐
+│ Returns bool (success) │
+└────────────────────────┘
+```
+
+### Attestation Threshold Consensus
+
+For threshold $M=2$:
+
+1. Oracle 1 submits `verifyOutage()` $\rightarrow$ Recorded on-chain (`attestations[satelliteId] = 1`).
+2. Oracle 2 submits `verifyOutage()` $\rightarrow$ Recorded on-chain (`attestations[satelliteId] = 2`).
+3. Threshold reached ($2 \ge 2$) $\rightarrow$ `registerSettlement()` automatically invoked.

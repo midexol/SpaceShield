@@ -1,0 +1,19 @@
+# FAQ & Trust Model
+
+Frequently asked questions regarding SpaceShield's trust assumptions, oracle security, and Spacecoin integration.
+
+---
+
+## Frequently Asked Questions
+
+### 1. What happens if one oracle is compromised?
+SpaceShield uses M-of-N threshold consensus (`SpaceShieldASC.sol`). If $M=2$ and threshold is set to 2 out of 3, a single compromised oracle key cannot initiate a settlement. At least 2 distinct oracles must independently verify the outage.
+
+### 2. How are satellite outages verified if telemetry is off-chain?
+The AI Oracle agent cross-references NORAD Two-Line Element (TLE) orbital data from CelesTrak. If a satellite suffers a major anomaly or loss of transmission passes, CelesTrak TLE updates reflect the orbital decay or loss of telemetry contact.
+
+### 3. How does pull-based claiming work?
+Rather than pushing tokens to thousands of subscribers in a single loop (which causes gas limits to fail), subscribers call `claim(settlementId)` on `SettlementContract` to pull their entitlement directly into their wallet.
+
+### 4. How do I point the main frontend app to these docs?
+Set `VITE_DOCS_URL` in `frontend/.env` to point to your Vercel deployment URL (e.g. `https://spaceshield-docs.vercel.app`).
